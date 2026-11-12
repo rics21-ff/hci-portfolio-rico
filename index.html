@@ -1,0 +1,2987 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark light">
+  <meta name="description" content="HCI project: Rico Francis Robert D. - interactive gamified Developer Core Dashboard.">
+  <title>RICO| Portfolio</title>
+  <!-- Inline favicon: prevents a /favicon.ico 404 in the DevTools console -->
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23090d16'/%3E%3Ccircle cx='16' cy='16' r='8' fill='none' stroke='%2300f0ff' stroke-width='3'/%3E%3C/svg%3E">
+
+  <style>
+    /* =====================================================================
+       1. DESIGN TOKENS  (dark = default "Tech Noir", light = "Day Terminal")
+       ===================================================================== */
+    :root {
+      --bg: #090d16;
+      --bg-soft: rgba(255, 255, 255, 0.04);
+      --panel: rgba(14, 21, 38, 0.78);
+      --line: rgba(0, 240, 255, 0.22);
+      --line-strong: rgba(0, 240, 255, 0.6);
+      --accent: #00f0ff;
+      --accent-2: #b026ff;
+      --ok: #39ff88;
+      --warn: #ffcf4a;
+      --text: #dbe7ff;
+      --muted: #8196bb;
+      --glow: 0 0 22px rgba(0, 240, 255, 0.28);
+      --grid-line: rgba(0, 240, 255, 0.05);
+      --scanline: 0.22;
+      --radius: 16px;
+      --font-ui: "Segoe UI", system-ui, -apple-system, Roboto, "Helvetica Neue", Arial, sans-serif;
+      --font-mono: ui-monospace, "Cascadia Code", "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+      color-scheme: dark;
+    }
+
+    :root[data-theme="light"] {
+      --bg: #eaf0f7;
+      --bg-soft: rgba(0, 60, 90, 0.05);
+      --panel: rgba(255, 255, 255, 0.88);
+      --line: rgba(0, 110, 130, 0.25);
+      --line-strong: rgba(0, 110, 130, 0.65);
+      --accent: #007a8a;
+      --accent-2: #7b2cbf;
+      --ok: #0a8f45;
+      --warn: #8a5a00;
+      --text: #0f1b2d;
+      --muted: #51647f;
+      --glow: 0 0 18px rgba(0, 122, 138, 0.22);
+      --grid-line: rgba(0, 90, 110, 0.07);
+      --scanline: 0;
+      color-scheme: light;
+    }
+
+    :root[data-theme="high-contrast"] {
+      --bg: #000;
+      --bg-soft: #111;
+      --panel: #000;
+      --line: #fff;
+      --line-strong: #ff0;
+      --accent: #ff0;
+      --accent-2: #fff;
+      --ok: #ff0;
+      --warn: #fff;
+      --text: #fff;
+      --muted: #fff;
+      --glow: none;
+      --grid-line: transparent;
+      --scanline: 0;
+      color-scheme: dark;
+    }
+
+    /* =====================================================================
+       2. BASE / RESET
+       ===================================================================== */
+    *, *::before, *::after { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: var(--font-ui);
+      color: var(--text);
+      background: var(--bg);
+      line-height: 1.55;
+      overflow-x: hidden;
+      transition: background-color 0.4s ease, color 0.4s ease;
+    }
+
+    /* Ambient glow + HUD grid (fixed, behind everything) */
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      pointer-events: none;
+      background:
+        radial-gradient(900px 500px at 12% -8%, rgba(0, 240, 255, 0.13), transparent 60%),
+        radial-gradient(800px 520px at 100% 10%, rgba(176, 38, 255, 0.14), transparent 60%),
+        linear-gradient(var(--grid-line) 1px, transparent 1px) 0 0 / 44px 44px,
+        linear-gradient(90deg, var(--grid-line) 1px, transparent 1px) 0 0 / 44px 44px;
+    }
+
+    /* Subtle CRT scanlines (disabled in light mode) */
+    body::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      z-index: 5;
+      pointer-events: none;
+      opacity: var(--scanline);
+      background: repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.35) 0 1px, transparent 1px 3px);
+    }
+
+    :root[data-theme="high-contrast"] *,
+    :root[data-theme="high-contrast"] *::before,
+    :root[data-theme="high-contrast"] *::after {
+      box-shadow: none !important;
+      text-shadow: none !important;
+      filter: none !important;
+    }
+
+    button { font: inherit; color: inherit; }
+    h1, h2, h3, p { margin: 0; }
+    ul, ol { margin: 0; padding: 0; list-style: none; }
+
+    :focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 3px;
+    }
+
+    .skip-link {
+      position: absolute;
+      left: 12px;
+      top: -60px;
+      z-index: 200;
+      padding: 10px 14px;
+      border-radius: 10px;
+      background: var(--accent);
+      color: #031018;
+      font-weight: 700;
+      transition: top 0.2s ease;
+    }
+    .skip-link:focus { top: 12px; }
+
+    .shell {
+      width: min(1240px, 100%);
+      margin: 0 auto;
+      padding: 0 clamp(14px, 3vw, 32px) 40px;
+    }
+
+    /* =====================================================================
+       3. REUSABLE COMPONENTS
+       ===================================================================== */
+    .panel {
+      position: relative;
+      padding: clamp(16px, 2.2vw, 24px);
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      -webkit-backdrop-filter: blur(12px);
+      backdrop-filter: blur(12px);
+      transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease,
+                  background-color 0.4s ease;
+    }
+    .panel:hover {
+      transform: translateY(-2px);
+      border-color: var(--line-strong);
+      box-shadow: var(--glow);
+    }
+
+    .panel-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+    .panel-title::before {
+      content: "";
+      width: 9px;
+      height: 9px;
+      background: var(--accent-2);
+      box-shadow: 0 0 10px var(--accent-2);
+      transform: rotate(45deg);
+    }
+    .panel-title::after {
+      content: "";
+      flex: 1;
+      height: 1px;
+      background: linear-gradient(90deg, var(--line-strong), transparent);
+    }
+
+    /* Magnetic micro-interaction: JS only sets --mx / --my; hover sets --s */
+    .magnetic {
+      transform: translate3d(var(--mx, 0px), var(--my, 0px), 0) scale(var(--s, 1));
+      transition: transform 0.18s ease-out, border-color 0.2s ease, background-color 0.2s ease,
+                  box-shadow 0.2s ease, color 0.2s ease;
+    }
+    .magnetic:hover { --s: 1.04; }
+    .magnetic:active { --s: 0.97; }
+
+    /* Staggered entrance animation */
+    .reveal {
+      animation: rise 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+      animation-delay: calc(var(--i, 0) * 90ms);
+    }
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(18px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* =====================================================================
+       4. HEADER: BRAND + 60-SECOND RETENTION MATRIX + THEME SWITCH
+       ===================================================================== */
+    .topbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px 24px;
+      margin: 14px 0 22px;
+      padding: 14px 18px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      -webkit-backdrop-filter: blur(14px);
+      backdrop-filter: blur(14px);
+      z-index: 50;
+    }
+    @media (min-width: 701px) {
+      .topbar { position: sticky; top: 10px; }
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-family: var(--font-mono);
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      white-space: nowrap;
+    }
+    .brand small { color: var(--accent); font-weight: 600; }
+    .brand-dot {
+      width: 11px;
+      height: 11px;
+      border-radius: 50%;
+      background: var(--ok);
+      box-shadow: 0 0 12px var(--ok);
+      animation: blink 1.6s ease-in-out infinite;
+    }
+    @keyframes blink { 50% { opacity: 0.35; } }
+
+    .retention {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex: 1 1 340px;
+      min-width: 0;
+      justify-content: center;
+    }
+
+    .ring { position: relative; width: 72px; height: 72px; flex: none; }
+    .ring svg { width: 100%; height: 100%; display: block; }
+    .ring-track { fill: none; stroke: var(--line); stroke-width: 6; }
+    .ring-fill {
+      fill: none;
+      stroke: url(#ringGrad);
+      stroke-width: 6;
+      stroke-linecap: round;
+      transition: stroke-dashoffset 0.25s linear;
+      filter: drop-shadow(0 0 4px rgba(0, 240, 255, 0.55));
+    }
+    :root[data-theme="high-contrast"] .ring-fill { stroke: var(--accent); }
+    .ring-time {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      font-family: var(--font-mono);
+      font-size: 0.95rem;
+      font-weight: 700;
+    }
+    .ring.complete { animation: ringPulse 1.4s ease-in-out infinite; }
+    @keyframes ringPulse {
+      50% { filter: drop-shadow(0 0 10px var(--ok)); }
+    }
+
+    .ret-text { display: grid; gap: 4px; min-width: 0; }
+    .ret-label {
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .ret-status {
+      font-weight: 700;
+      color: var(--accent);
+      min-height: 1.5em;
+    }
+    .milestones { display: flex; gap: 6px; flex-wrap: wrap; }
+    .milestones li {
+      padding: 1px 9px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      font-family: var(--font-mono);
+      font-size: 0.68rem;
+      color: var(--muted);
+      transition: all 0.3s ease;
+    }
+    .milestones li.hit {
+      color: #031018;
+      background: var(--accent);
+      border-color: var(--accent);
+      box-shadow: var(--glow);
+    }
+
+    .term-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 14px 8px 8px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: var(--bg-soft);
+      cursor: pointer;
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+      letter-spacing: 0.08em;
+    }
+    .term-toggle:hover { border-color: var(--line-strong); box-shadow: var(--glow); }
+    .xray-toggle[aria-pressed="true"] { border-color: var(--ok); color: var(--ok); }
+    .term-track {
+      position: relative;
+      width: 58px;
+      height: 22px;
+      border-radius: 999px;
+      background: var(--line);
+    }
+    .term-knob {
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 8px var(--accent);
+      transition: transform 0.3s cubic-bezier(0.3, 1.4, 0.5, 1);
+    }
+    :root[data-theme="light"] .term-knob { transform: translateX(18px); background: var(--accent-2); }
+    :root[data-theme="high-contrast"] .term-knob { transform: translateX(36px); background: var(--accent-2); }
+
+    .xray-note {
+      position: fixed;
+      z-index: 120;
+      max-width: min(250px, calc(100vw - 24px));
+      padding: 9px 12px;
+      border: 1px solid var(--accent);
+      border-radius: 10px;
+      background: var(--bg);
+      color: var(--accent);
+      box-shadow: var(--glow);
+      font: 600 0.78rem/1.4 var(--font-mono);
+      pointer-events: none;
+      opacity: 0;
+      transform: translateY(6px);
+      transition: opacity 0.2s ease, transform 0.2s ease;
+    }
+    .xray-note.visible { opacity: 1; transform: translateY(0); }
+    .xray-note[hidden] { display: none; }
+
+    .vision-simulator-button[aria-pressed="true"] { border-color: var(--warn); color: var(--warn); }
+    .vision-status {
+      position: fixed;
+      left: 50%;
+      bottom: 16px;
+      z-index: 180;
+      width: min(680px, calc(100vw - 32px));
+      padding: 12px 16px;
+      border: 1px solid var(--accent);
+      border-radius: 12px;
+      background: var(--bg);
+      color: var(--text);
+      box-shadow: var(--glow);
+      font: 600 0.82rem/1.5 var(--font-mono);
+      text-align: center;
+      transform: translateX(-50%);
+    }
+    .vision-status[hidden], .vision-mask[hidden] { display: none; }
+    .vision-condition { display: block; margin-bottom: 3px; color: var(--accent); }
+    .vision-mask {
+      position: fixed;
+      inset: 0;
+      z-index: 160;
+      pointer-events: none;
+      background: radial-gradient(
+        circle 145px at var(--vision-x, 50vw) var(--vision-y, 50vh),
+        transparent 0 95px,
+        rgba(0, 0, 0, 0.98) 145px
+      );
+    }
+    :root[data-anti-ui="true"] body,
+    :root[data-anti-ui="true"] body * { cursor: crosshair !important; }
+    :root[data-anti-ui="true"] button {
+      border-color: transparent !important;
+      border-radius: 0 !important;
+      background: transparent !important;
+      box-shadow: none !important;
+      color: inherit !important;
+      cursor: text !important;
+    }
+    :root[data-anti-ui="true"] p {
+      display: inline-block;
+      padding: 8px 12px;
+      border: 1px solid var(--accent);
+      border-radius: 10px;
+      background: var(--bg-soft);
+      box-shadow: var(--glow);
+      color: var(--accent);
+      cursor: pointer !important;
+    }
+    :root[data-anti-ui="true"] .layout { transform: scaleX(-1); }
+    .anti-ui-overlay {
+      z-index: 1200;
+      background: rgba(0, 0, 0, 0.88);
+    }
+    .anti-ui-card {
+      width: min(520px, 100%);
+      padding: 28px 24px;
+      border: 2px solid var(--warn);
+      border-radius: 16px;
+      background: #090d16;
+      color: #fff;
+      text-align: center;
+      box-shadow: 0 0 24px rgba(255, 207, 74, 0.35);
+    }
+    .anti-ui-card h2 { margin-bottom: 12px; color: var(--warn); font-family: var(--font-mono); }
+    .anti-ui-countdown { margin-bottom: 18px; font-size: 1rem; }
+    .anti-ui-countdown strong { display: block; font-size: 4rem; line-height: 1.15; color: var(--warn); }
+    .anti-ui-message { margin-bottom: 18px; line-height: 1.6; }
+    .anti-ui-overlay[hidden] { display: none; }
+    :root[data-vision="protanopia"] .shell,
+    :root[data-theme="high-contrast"][data-vision="protanopia"] .shell {
+      filter: url("#protanopiaFilter") !important;
+    }
+    :root[data-vision="cataracts"] .shell,
+    :root[data-theme="high-contrast"][data-vision="cataracts"] .shell {
+      filter: blur(1.5px) contrast(0.7) !important;
+    }
+
+    .command-dialog {
+      width: min(560px, 100%);
+      padding: 22px;
+      border: 1px solid var(--line-strong);
+      border-radius: 18px;
+      background: var(--panel);
+      box-shadow: var(--glow);
+    }
+    .command-dialog h2 { margin-bottom: 14px; color: var(--accent); font-family: var(--font-mono); }
+    .command-dialog input {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: var(--bg);
+      color: var(--text);
+      font: inherit;
+    }
+    .command-list { display: grid; gap: 7px; margin-top: 12px; }
+    .command-item {
+      padding: 11px 13px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: var(--bg-soft);
+      text-align: left;
+      cursor: pointer;
+    }
+    .command-item:hover, .command-item:focus-visible { border-color: var(--accent); color: var(--accent); }
+    .command-item[hidden] { display: none; }
+    .command-empty { min-height: 1.5em; margin-top: 10px; color: var(--muted); font-size: 0.85rem; }
+    .command-help { margin-top: 12px; color: var(--muted); font-size: 0.78rem; }
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    .easter-egg {
+      position: fixed;
+      right: 18px;
+      bottom: 18px;
+      z-index: 150;
+      max-width: min(420px, calc(100vw - 36px));
+      padding: 16px 20px;
+      border: 1px solid var(--ok);
+      border-radius: 14px;
+      background: var(--panel);
+      color: var(--ok);
+      box-shadow: var(--glow);
+      font-weight: 700;
+    }
+    .easter-egg[hidden] { display: none; }
+
+    /* =====================================================================
+       5. SYSTEM AUDIT (QUEST) PANEL
+       ===================================================================== */
+    .mission { margin-bottom: 24px; }
+    .mission-head { display: flex; align-items: flex-start; gap: 12px; }
+    .mission-head .panel-title { flex: 1; }
+    .pct {
+      font-family: var(--font-mono);
+      font-size: 1.5rem;
+      line-height: 1;
+      color: var(--accent);
+      text-shadow: var(--glow);
+    }
+    .bar {
+      height: 14px;
+      border-radius: 999px;
+      overflow: hidden;
+      background: var(--bg-soft);
+      border: 1px solid var(--line);
+    }
+    .bar-fill {
+      height: 100%;
+      width: 0%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--accent), var(--accent-2));
+      box-shadow: 0 0 14px rgba(0, 240, 255, 0.5);
+      transition: width 0.5s cubic-bezier(0.3, 0.9, 0.3, 1);
+    }
+    .mission.complete { border-color: var(--ok); box-shadow: 0 0 28px rgba(57, 255, 136, 0.25); }
+    .mission.complete .bar-fill { background: linear-gradient(90deg, var(--ok), var(--accent)); }
+
+    .next-hint {
+      margin: 12px 0 14px;
+      font-family: var(--font-mono);
+      font-size: 0.82rem;
+      color: var(--muted);
+    }
+    .next-hint b { color: var(--warn); }
+
+    .objectives {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      gap: 10px;
+    }
+    .objective {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--bg-soft);
+      font-size: 0.88rem;
+      transition: border-color 0.3s ease, background-color 0.3s ease, transform 0.2s ease;
+    }
+    .objective:hover { transform: translateY(-2px); border-color: var(--line-strong); }
+    .obj-check {
+      flex: none;
+      width: 22px;
+      height: 22px;
+      display: grid;
+      place-items: center;
+      border: 2px solid var(--line-strong);
+      border-radius: 6px;
+      font-size: 0.8rem;
+      font-weight: 800;
+      color: transparent;
+      transition: all 0.3s ease;
+    }
+    .obj-label { flex: 1; min-width: 0; }
+    .obj-count { font-family: var(--font-mono); font-size: 0.75rem; color: var(--muted); }
+    .objective.done { border-color: var(--ok); background: rgba(57, 255, 136, 0.08); }
+    .objective.done .obj-check { color: #031018; background: var(--ok); border-color: var(--ok); }
+    .objective.done .obj-count { color: var(--ok); }
+
+    /* =====================================================================
+       6. MASTER LAYOUT (two columns, collapses to one on small screens)
+       ===================================================================== */
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(280px, 390px) minmax(0, 1fr);
+      gap: 24px;
+      align-items: start;
+    }
+    .col { display: grid; gap: 24px; min-width: 0; }
+    @media (max-width: 920px) {
+      .layout { grid-template-columns: minmax(0, 1fr); }
+    }
+
+    /* ----- Profile card ----- */
+    .avatar {
+      position: relative;
+      width: 176px;
+      aspect-ratio: 1;
+      margin: 4px auto 18px;
+    }
+    .avatar-ring,
+    .avatar-ring::after {
+      position: absolute;
+      inset: -8px;
+      border-radius: 50%;
+      border: 2px solid var(--accent);
+      content: "";
+      animation: ripple 1.5s ease-out infinite;
+    }
+    .avatar-ring { animation-delay: 0s; }
+    .avatar-ring::after { inset: -2px; animation-delay: 0.45s; border-color: var(--accent-2); }
+    @keyframes ripple {
+      0%   { transform: scale(0.92); opacity: 0.9; }
+      100% { transform: scale(1.22); opacity: 0; }
+    }
+    /* Heartbeat: "lub-dub" scale + glow pulse */
+    .avatar-core {
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at 30% 25%, rgba(0, 240, 255, 0.28), transparent 55%),
+        linear-gradient(145deg, rgba(176, 38, 255, 0.4), rgba(0, 240, 255, 0.12));
+      border: 2px solid var(--accent);
+      animation: heartbeat 1.3s ease-in-out infinite;
+    }
+    .avatar-core img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: inherit;
+      display: block;
+      filter: grayscale(0.65) sepia(0.25) hue-rotate(145deg) saturate(1.7) opacity(0.9);
+      mix-blend-mode: screen;
+    }
+    @keyframes heartbeat {
+      0%, 100% { transform: scale(1);    box-shadow: 0 0 16px rgba(0, 240, 255, 0.35); }
+      14%      { transform: scale(1.07); box-shadow: 0 0 34px rgba(0, 240, 255, 0.75); }
+      28%      { transform: scale(1);    box-shadow: 0 0 16px rgba(0, 240, 255, 0.35); }
+      42%      { transform: scale(1.1);  box-shadow: 0 0 42px rgba(176, 38, 255, 0.8); }
+      70%      { transform: scale(1);    box-shadow: 0 0 16px rgba(0, 240, 255, 0.35); }
+    }
+
+    .typed {
+      display: block;
+      width: 24ch;
+      max-width: 100%;
+      overflow: hidden;
+      white-space: nowrap;
+      margin: 0 auto 8px;
+      font-family: var(--font-mono);
+      font-size: 0.85rem;
+      color: var(--ok);
+      border-right: 2px solid var(--ok);
+      animation: typing 2.2s steps(24) 0.6s both, caret 0.8s step-end infinite;
+    }
+    @keyframes typing { from { width: 0; } to { width: 24ch; } }
+    @keyframes caret  { 50% { border-color: transparent; } }
+
+    .player-tag {
+      text-align: center;
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      letter-spacing: 0.22em;
+      color: var(--muted);
+    }
+    .player-name {
+      margin: 6px 0 4px;
+      text-align: center;
+      font-size: clamp(1.45rem, 3.4vw, 1.9rem);
+      line-height: 1.15;
+      letter-spacing: 0.02em;
+      background: linear-gradient(90deg, var(--accent), var(--accent-2));
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      cursor: default;
+      width: fit-content;
+      margin-inline: auto;
+    }
+    .player-sub { text-align: center; color: var(--muted); font-size: 0.92rem; }
+
+    .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 18px 0; }
+    .stat {
+      padding: 10px 6px;
+      text-align: center;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--bg-soft);
+      transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+    .stat:hover { transform: translateY(-3px) scale(1.04); border-color: var(--line-strong); box-shadow: var(--glow); }
+    .stat span { display: block; font-family: var(--font-mono); font-size: 0.62rem; letter-spacing: 0.16em; color: var(--muted); }
+    .stat strong { display: block; font-size: 0.95rem; color: var(--accent); }
+
+    .info-list { display: grid; gap: 10px; font-size: 0.9rem; }
+    .info-list li { display: grid; gap: 1px; }
+    .info-list span { font-family: var(--font-mono); font-size: 0.66rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted); }
+    .info-list strong { font-weight: 600; }
+
+    /* ----- External Links Matrix ----- */
+    .links-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; }
+    .link-btn {
+      position: relative;
+      padding: 12px 10px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: linear-gradient(145deg, rgba(0, 240, 255, 0.08), rgba(176, 38, 255, 0.1));
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      cursor: pointer;
+      overflow: hidden;
+    }
+    .link-btn::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(110deg, transparent 30%, rgba(255, 255, 255, 0.22) 50%, transparent 70%);
+      transform: translateX(-120%);
+      transition: transform 0.6s ease;
+    }
+    .link-btn:hover::before { transform: translateX(120%); }
+    .link-btn:hover { border-color: var(--accent); box-shadow: var(--glow); }
+    .link-btn.armed {
+      border-color: var(--ok);
+      color: var(--ok);
+      box-shadow: 0 0 18px rgba(57, 255, 136, 0.35);
+      animation: armed 1s ease-in-out infinite;
+    }
+    @keyframes armed { 50% { background-color: rgba(57, 255, 136, 0.14); } }
+    .link-hint { margin-top: 12px; font-family: var(--font-mono); font-size: 0.74rem; color: var(--muted); }
+
+    /* ----- Instructor feedback form ----- */
+    .feedback-form { display: grid; gap: 14px; }
+    .feedback-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+    .feedback-field { display: grid; gap: 6px; min-width: 0; }
+    .feedback-field.full { grid-column: 1 / -1; }
+    .feedback-field label {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+    }
+    .feedback-field input,
+    .feedback-field select,
+    .feedback-field textarea {
+      width: 100%;
+      min-width: 0;
+      padding: 11px 12px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: var(--bg-soft);
+      color: var(--text);
+      font: inherit;
+    }
+    .feedback-field select option { background: var(--bg); color: var(--text); }
+    .feedback-field textarea { min-height: 130px; resize: vertical; }
+    .feedback-form .btn { justify-self: start; }
+    .feedback-note { color: var(--muted); font-size: 0.8rem; }
+    .feedback-status { min-height: 1.5em; color: var(--ok); font-size: 0.86rem; }
+    .feedback-status.error { color: var(--warn); }
+    @media (max-width: 560px) {
+      .feedback-fields { grid-template-columns: minmax(0, 1fr); }
+      .feedback-field.full { grid-column: auto; }
+    }
+
+    /* ----- Hobbies ----- */
+    .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+    .chip {
+      padding: 7px 13px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: var(--bg-soft);
+      font-size: 0.86rem;
+      cursor: default;
+      transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, color 0.2s ease;
+    }
+    .chip:hover { transform: translateY(-3px) rotate(-1.5deg); border-color: var(--accent-2); color: var(--accent-2); box-shadow: 0 0 14px rgba(176, 38, 255, 0.3); }
+
+    /* ----- Fitts's Law Reflex Tester ----- */
+    .reflex-intro { margin-bottom: 12px; color: var(--muted); font-size: 0.9rem; }
+    .reflex-board {
+      position: relative;
+      height: 300px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--bg-soft);
+    }
+    .reflex-target {
+      position: absolute;
+      display: block;
+      padding: 0;
+      border: 2px solid var(--accent);
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: var(--glow);
+      cursor: crosshair;
+    }
+    .reflex-target:focus-visible { outline-offset: 3px; }
+    .reflex-controls { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; margin-top: 12px; }
+    .reflex-status { color: var(--muted); font-size: 0.86rem; }
+    .reflex-result { margin-top: 14px; color: var(--text); font-size: 0.9rem; }
+    .reflex-result[hidden] { display: none; }
+    .reflex-principle { margin-top: 6px; color: var(--accent); }
+
+    /* ----- Hick's Law Decision Matrix ----- */
+    .hick-intro { margin-bottom: 12px; color: var(--muted); font-size: 0.9rem; }
+    .hick-game {
+      display: grid;
+      gap: 14px;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--bg-soft);
+    }
+    .hick-symbol-stage {
+      min-height: 120px;
+      display: grid;
+      place-items: center;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: var(--bg);
+    }
+    .hick-symbol {
+      color: var(--accent);
+      font-size: clamp(3rem, 12vw, 5rem);
+      line-height: 1;
+      text-shadow: var(--glow);
+    }
+    .hick-choices {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+    }
+    .hick-choice {
+      min-height: 48px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: var(--bg-soft);
+      color: var(--accent);
+      font-size: 1.3rem;
+      cursor: pointer;
+    }
+    .hick-choice:hover:not(:disabled), .hick-choice:focus-visible {
+      border-color: var(--accent);
+      box-shadow: var(--glow);
+    }
+    .hick-choice:disabled { cursor: not-allowed; opacity: 0.55; }
+    .hick-status { min-height: 1.5em; color: var(--muted); font-size: 0.86rem; }
+    .hick-results { display: grid; gap: 8px; margin-top: 14px; }
+    .hick-results[hidden] { display: none; }
+    .hick-principle { color: var(--accent); font-size: 0.9rem; }
+    @media (max-width: 420px) {
+      .hick-choices { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+
+    /* ----- Gestalt Pattern Security Lock ----- */
+    .gestalt-intro { margin-bottom: 12px; color: var(--muted); font-size: 0.9rem; }
+    .gestalt-game {
+      display: grid;
+      gap: 12px;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--bg-soft);
+    }
+    .gestalt-status { min-height: 1.5em; color: var(--muted); font-size: 0.86rem; }
+    .gestalt-grid {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: clamp(5px, 1.5vw, 12px);
+      width: min(100%, 340px);
+      margin: 0 auto;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--bg);
+    }
+    .gestalt-cell {
+      width: 100%;
+      aspect-ratio: 1;
+      display: grid;
+      place-items: center;
+      padding: 0;
+      border: 0;
+      background: transparent;
+      cursor: pointer;
+    }
+    .gestalt-shape {
+      display: block;
+      width: clamp(14px, 4vw, 22px);
+      aspect-ratio: 1;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: var(--glow);
+      pointer-events: none;
+    }
+    .gestalt-shape.odd-one { border-radius: 3px; background: var(--accent-2); }
+    .gestalt-cell.cluster-nw .gestalt-shape { margin-right: -14px; margin-bottom: -14px; }
+    .gestalt-cell.cluster-ne .gestalt-shape { margin-left: -14px; margin-bottom: -14px; }
+    .gestalt-cell.cluster-sw .gestalt-shape { margin-right: -14px; margin-top: -14px; }
+    .gestalt-cell.cluster-se .gestalt-shape { margin-left: -14px; margin-top: -14px; }
+    .gestalt-cell:hover .gestalt-shape, .gestalt-cell:focus-visible .gestalt-shape {
+      outline: 2px solid var(--text);
+      outline-offset: 4px;
+    }
+    .gestalt-cell.closure-target { aspect-ratio: 1; }
+    .gestalt-cell.closure-target {
+      grid-column: 1 / -1;
+      justify-self: center;
+      width: 100%;
+      min-height: 200px;
+    }
+    .closure-shape {
+      width: clamp(58px, 16vw, 90px);
+      border: 6px solid var(--accent);
+      border-right-color: transparent;
+      border-radius: 50%;
+      background: transparent;
+      box-shadow: var(--glow);
+      transform: rotate(-25deg);
+    }
+    .gestalt-results { display: grid; gap: 8px; }
+    .gestalt-results[hidden] { display: none; }
+    .gestalt-principle { color: var(--accent); font-size: 0.9rem; }
+
+    /* ----- Timeline (interactive accordion roadmap) ----- */
+    .timeline { position: relative; display: grid; gap: 12px; }
+    .tl-item { position: relative; padding-left: 34px; }
+    .tl-item::before {
+      content: "";
+      position: absolute;
+      left: 11px;
+      top: 0;
+      bottom: -12px;
+      width: 2px;
+      background: linear-gradient(var(--line-strong), var(--line));
+    }
+    .tl-item:last-child::before { bottom: auto; height: 26px; }
+    .tl-dot {
+      position: absolute;
+      left: 2px;
+      top: 18px;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      border: 2px solid var(--accent);
+      background: var(--bg);
+      transition: all 0.3s ease;
+      z-index: 1;
+    }
+    .tl-item.visited .tl-dot { background: var(--accent); box-shadow: 0 0 14px var(--accent); }
+    .tl-item.current .tl-dot { border-color: var(--ok); animation: dotPulse 1.5s ease-in-out infinite; }
+    @keyframes dotPulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(57, 255, 136, 0.6); }
+      50%      { box-shadow: 0 0 0 9px rgba(57, 255, 136, 0); }
+    }
+
+    .tl-node {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 13px 16px;
+      text-align: left;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--bg-soft);
+      cursor: pointer;
+      transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+    }
+    .tl-node:hover { transform: translateX(5px); border-color: var(--accent); box-shadow: var(--glow); }
+    .tl-node[aria-expanded="true"] { border-color: var(--accent); background: rgba(0, 240, 255, 0.08); }
+    .tl-level { display: block; font-family: var(--font-mono); font-size: 0.66rem; letter-spacing: 0.18em; color: var(--accent-2); }
+    .tl-title { display: block; font-size: 1.02rem; }
+    .tl-school { display: block; font-size: 0.84rem; color: var(--muted); }
+    .tl-caret { flex: none; transition: transform 0.3s ease; color: var(--accent); }
+    .tl-node[aria-expanded="true"] .tl-caret { transform: rotate(90deg); }
+
+    .tl-panel {
+      display: grid;
+      grid-template-rows: 0fr;
+      transition: grid-template-rows 0.35s ease;
+    }
+    .tl-panel > div { overflow: hidden; visibility: hidden; transition: visibility 0s linear 0.35s; }
+    .tl-panel.open { grid-template-rows: 1fr; }
+    .tl-panel.open > div { visibility: visible; transition-delay: 0s; }
+    .tl-body { padding: 12px 6px 4px; font-size: 0.9rem; }
+    .tl-meta {
+      display: inline-block;
+      margin-bottom: 6px;
+      padding: 2px 10px;
+      border: 1px solid var(--ok);
+      border-radius: 999px;
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      letter-spacing: 0.1em;
+      color: var(--ok);
+    }
+
+    /* ----- Skills ----- */
+    .skills { display: flex; flex-wrap: wrap; gap: 10px; }
+    .skill {
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      padding: 9px 15px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--bg-soft);
+      cursor: pointer;
+      font-weight: 600;
+    }
+    .skill::before {
+      content: "";
+      width: 16px;
+      height: 16px;
+      border: 2px solid var(--line-strong);
+      border-radius: 5px;
+      transition: all 0.25s ease;
+    }
+    .skill:hover { border-color: var(--accent); box-shadow: var(--glow); }
+    .skill[aria-pressed="true"] { border-color: var(--ok); color: var(--ok); background: rgba(57, 255, 136, 0.08); }
+    .skill[aria-pressed="true"]::before {
+      content: "\2713";
+      display: grid;
+      place-items: center;
+      font-size: 0.72rem;
+      font-weight: 900;
+      color: #031018;
+      background: var(--ok);
+      border-color: var(--ok);
+    }
+
+    /* ----- Achievements ----- */
+    .badges { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 14px; }
+    .badge {
+      position: relative;
+      overflow: hidden;
+      padding: 18px 16px;
+      text-align: center;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: linear-gradient(160deg, rgba(176, 38, 255, 0.14), rgba(0, 240, 255, 0.06));
+      cursor: pointer;
+      transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+    }
+    .badge::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(115deg, transparent 35%, rgba(255, 255, 255, 0.28) 50%, transparent 65%);
+      transform: translateX(-130%);
+      transition: transform 0.7s ease;
+      pointer-events: none;
+    }
+    .badge:hover, .badge:focus-visible { transform: translateY(-6px) scale(1.03); border-color: var(--accent-2); box-shadow: 0 0 26px rgba(176, 38, 255, 0.4); }
+    .badge:hover::after, .badge:focus-visible::after { transform: translateX(130%); }
+    .badge-icon {
+      display: block;
+      font-size: 2.3rem;
+      margin-bottom: 6px;
+      transition: transform 0.4s cubic-bezier(0.3, 1.6, 0.5, 1);
+    }
+    .badge:hover .badge-icon, .badge:focus-visible .badge-icon { transform: rotate(-12deg) scale(1.2); }
+    .badge h3 { font-size: 1rem; }
+    .badge p { margin-top: 4px; font-size: 0.82rem; color: var(--muted); }
+    .badge-state {
+      display: inline-block;
+      margin-top: 10px;
+      padding: 2px 10px;
+      border: 1px solid var(--line-strong);
+      border-radius: 999px;
+      font-family: var(--font-mono);
+      font-size: 0.64rem;
+      letter-spacing: 0.16em;
+      color: var(--accent);
+    }
+    .badge.inspected .badge-state { color: var(--ok); border-color: var(--ok); }
+
+    /* ----- Deployment log ----- */
+    .log {
+      height: 220px;
+      overflow-y: auto;
+      padding: 12px 14px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: rgba(2, 6, 14, 0.7);
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+      line-height: 1.6;
+      scrollbar-width: thin;
+    }
+    .log-heading {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .log-heading .panel-title { flex: 1; margin-bottom: 0; }
+    .decrypt-button { flex: none; padding: 8px 13px; font-size: 0.78rem; }
+    @media (max-width: 560px) {
+      .log-heading .panel-title { flex-basis: 100%; }
+    }
+    :root[data-theme="light"] .log { background: rgba(10, 25, 45, 0.92); }
+    .log-line { animation: logIn 0.35s ease both; word-break: break-word; }
+    .log-line + .log-line { margin-top: 2px; }
+    .log-info { color: #7fe9f3; }
+    .log-ok   { color: #39ff88; }
+    .log-warn { color: #ffcf4a; }
+    @keyframes logIn { from { opacity: 0; transform: translateX(-8px); } to { opacity: 1; transform: none; } }
+
+    /* =====================================================================
+       7. FINALE: SALUTE DIALOG + CSS CONFETTI
+       ===================================================================== */
+    .overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 900;
+      display: grid;
+      place-items: center;
+      padding: 18px;
+      background: rgba(3, 6, 14, 0.78);
+      -webkit-backdrop-filter: blur(6px);
+      backdrop-filter: blur(6px);
+    }
+    .overlay[hidden] { display: none; }
+    .salute-card {
+      width: min(520px, 100%);
+      padding: 34px 26px;
+      text-align: center;
+      border: 1px solid var(--ok);
+      border-radius: 20px;
+      background: var(--panel);
+      box-shadow: 0 0 60px rgba(57, 255, 136, 0.3);
+      animation: pop 0.55s cubic-bezier(0.3, 1.5, 0.5, 1) both;
+    }
+    @keyframes pop { from { opacity: 0; transform: scale(0.7) translateY(20px); } to { opacity: 1; transform: none; } }
+    .salute-icon { font-size: 3rem; }
+    .salute-card h2 { margin: 8px 0 6px; font-size: 1.6rem; color: var(--ok); }
+    .salute-card p { color: var(--text); font-size: 1.05rem; }
+    .salute-actions { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 22px; }
+    .btn {
+      padding: 10px 20px;
+      border: 1px solid var(--accent);
+      border-radius: 999px;
+      background: linear-gradient(90deg, rgba(0, 240, 255, 0.18), rgba(176, 38, 255, 0.2));
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .btn:hover { box-shadow: var(--glow); }
+
+    .confetti { position: fixed; inset: 0; z-index: 1000; pointer-events: none; overflow: hidden; }
+    .confetti-piece {
+      position: absolute;
+      left: 50%;
+      top: 42%;
+      width: var(--w);
+      height: var(--h);
+      background: var(--c);
+      border-radius: var(--r);
+      opacity: 0;
+      animation: burst var(--dur) both;
+    }
+    @keyframes burst {
+      0%   { opacity: 1; transform: translate(0, 0) rotate(0deg); animation-timing-function: cubic-bezier(0.1, 0.7, 0.3, 1); }
+      35%  { opacity: 1; transform: translate(var(--dx), var(--dy)) rotate(calc(var(--rot) * 0.5)); animation-timing-function: cubic-bezier(0.5, 0, 0.9, 0.6); }
+      100% { opacity: 0; transform: translate(calc(var(--dx) * 1.25), calc(var(--dy) + 75vh)) rotate(var(--rot)); }
+    }
+
+    /* =====================================================================
+       8. FOOTER
+       ===================================================================== */
+    .footer { margin-top: 28px; text-align: center; color: var(--muted); font-size: 0.82rem; }
+    .footer .chips { justify-content: center; margin: 12px 0; }
+    .footer .chip { font-family: var(--font-mono); font-size: 0.7rem; }
+
+    /* Respect users who prefer reduced motion */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        animation-delay: 0s !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <div class="shell">
+
+    <!-- ===================== HEADER + RETENTION MATRIX ===================== -->
+    <header class="topbar reveal" style="--i:0">
+      <div class="brand">
+        <span class="brand-dot" aria-hidden="true"></span>
+        <span>DEV_CORE<small>//DASHBOARD</small></span>
+      </div>
+
+      <div class="retention">
+        <div class="ring" id="ring">
+          <svg viewBox="0 0 80 80" aria-hidden="true" focusable="false">
+            <defs>
+              <linearGradient id="ringGrad" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0" stop-color="#00f0ff"/>
+                <stop offset="1" stop-color="#b026ff"/>
+              </linearGradient>
+            </defs>
+            <circle class="ring-track" cx="40" cy="40" r="34"/>
+            <circle class="ring-fill" id="ringFill" cx="40" cy="40" r="34" transform="rotate(-90 40 40)"/>
+          </svg>
+          <span class="ring-time" id="retTime">0:00</span>
+        </div>
+
+        <div class="ret-text">
+          <span class="ret-label">60-Second HCI Retention Matrix</span>
+          <span class="ret-status" id="retStatus" role="status" aria-live="polite">Initializing Evaluation...</span>
+          <ol class="milestones" aria-label="Retention milestones" id="milestones">
+            <li data-at="15">15s</li>
+            <li data-at="30">30s</li>
+            <li data-at="45">45s</li>
+            <li data-at="60">60s</li>
+          </ol>
+        </div>
+      </div>
+
+      <button class="term-toggle magnetic" id="themeToggle" type="button" aria-label="Change color theme. Current theme: night">
+        <span class="term-track" aria-hidden="true"><span class="term-knob"></span></span>
+        <span id="themeLabel">TERMINAL: NIGHT</span>
+      </button>
+      <button class="term-toggle xray-toggle magnetic" id="xrayToggle" type="button" aria-pressed="false">HCI X-RAY: OFF</button>
+      <button class="term-toggle vision-simulator-button magnetic" id="visionSimulatorToggle" type="button" aria-pressed="false" aria-label="Cycle vision simulations">A11Y SIMULATOR: OFF</button>
+      <button class="term-toggle magnetic" id="audioToggle" type="button" aria-pressed="false" aria-label="Enable interface sounds">AUDIO: OFF</button>
+      <button class="term-toggle magnetic" id="commandToggle" type="button" aria-label="Open command palette">CTRL+K COMMANDS</button>
+      <button class="term-toggle magnetic" id="jakobToggle" type="button">Corrupt UI (Test Jakob's Law)</button>
+    </header>
+
+    <main id="main">
+
+      <!-- ===================== SYSTEM AUDIT PROGRESS ===================== -->
+      <section class="panel mission reveal" style="--i:1" id="mission" aria-labelledby="auditTitle">
+        <div class="mission-head">
+          <h2 class="panel-title" id="auditTitle">System Audit Progress</h2>
+          <strong class="pct" id="auditPct">0%</strong>
+        </div>
+        <div class="bar" id="auditBar" role="progressbar" aria-labelledby="auditTitle" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+          <div class="bar-fill" id="auditFill"></div>
+        </div>
+        <p class="next-hint" id="nextHint">NEXT &gt; Explore the dashboard to begin your audit.</p>
+        <ul class="objectives" id="objectives"></ul>
+      </section>
+
+      <div class="layout">
+
+        <!-- ========================= LEFT COLUMN ========================= -->
+        <div class="col">
+
+          <section class="panel reveal" style="--i:2" aria-label="Player profile">
+            <span class="typed" aria-hidden="true">&gt; hello, Sir Gian Carlo.</span>
+
+            <!-- Avatar placeholder with heartbeat animation -->
+            <div class="avatar">
+              <div class="avatar-ring" aria-hidden="true"></div>
+              <div class="avatar-core"><img src="FRANCIS.png" alt="Rico Francis Robert D."></div>
+            </div>
+
+            <p class="player-tag">PLAYER 01 :: ONLINE</p>
+            <h1 class="player-name magnetic">RICO FRANCIS ROBERT D.</h1>
+            <p class="player-sub">BSIT 3rd Year &bull; University of Cebu Main Campus</p>
+
+            <div class="stats">
+              <div class="stat"><span>COURSE</span><strong>BSIT</strong></div>
+              <div class="stat"><span>LEVEL</span><strong>3rd Year</strong></div>
+              <div class="stat"><span>SCHOOL</span><strong>UC Main</strong></div>
+            </div>
+
+            <ul class="info-list">
+              <li><span>Institution</span><strong>University of Cebu Main Campus</strong></li>
+              <li><span>Course &amp; Year</span><strong>BSIT 3rd Year</strong></li>
+              <li><span>Target Audience</span><strong>Sir Gian Carlo S. Cataraja (Instructor)</strong></li>
+            </ul>
+          </section>
+
+          <!-- External Links Matrix: the five onclick redirects are kept exactly as specified -->
+          <section class="panel reveal" style="--i:3" aria-labelledby="linksTitle">
+            <h2 class="panel-title" id="linksTitle">External Links Matrix</h2>
+            <div class="links-grid" id="linksGrid">
+              <button class="link-btn magnetic" type="button" data-net="GitHub" onclick="document.location='https://github.com/rics21-ff'">GitHub</button>
+              <button class="link-btn magnetic" type="button" data-net="Facebook" onclick="document.location='https://www.facebook.com/Francisric0'">Facebook</button>
+              <button class="link-btn magnetic" type="button" data-net="Tiktok" onclick="document.location='https://www.tiktok.com/@its.me.rico?is_from_webapp=1&sender_device=pc'">Tiktok</button>
+              <button class="link-btn magnetic" type="button" data-net="Twitter" onclick="document.location='https://x.com/FrancisRobertR1'">Twitter</button>
+              <button class="link-btn magnetic" type="button" data-net="Instagram" onclick="document.location='https://www.instagram.com/r.i.c.o.ff/'">Instagram</button>
+            </div>
+            <p class="link-hint" id="linkHint">Click once to inspect a handle, click again to open it.</p>
+          </section>
+
+          <section class="panel reveal" style="--i:4" aria-labelledby="hobbiesTitle">
+            <h2 class="panel-title" id="hobbiesTitle">Hobbies &amp; Side Quests</h2>
+            <ul class="chips" id="hobbies"></ul>
+          </section>
+
+          <section class="panel reveal" style="--i:5" aria-labelledby="reflexTitle">
+            <h2 class="panel-title" id="reflexTitle">Fitts's Law Reflex Tester</h2>
+            <p class="reflex-intro">Click the neon target as it appears. Complete 10 targets to see your average reaction time.</p>
+            <div class="reflex-board" id="reflexBoard" aria-label="Reflex test game board"></div>
+            <div class="reflex-controls">
+              <button class="btn magnetic" id="reflexStart" type="button">Start Calibration</button>
+              <p class="reflex-status" id="reflexStatus" role="status" aria-live="polite">Ready when you are.</p>
+            </div>
+            <div class="reflex-result" id="reflexResult" aria-live="polite" hidden>
+              <p id="reflexAverage"></p>
+              <p class="reflex-principle">HCI Principle Displayed: Fitts's Law - The time to acquire a target is a function of the distance to and size of the target.</p>
+            </div>
+          </section>
+
+          <section class="panel reveal" style="--i:6" aria-labelledby="hickTitle">
+            <h2 class="panel-title" id="hickTitle">HCI Lab: Hick's Law</h2>
+            <p class="hick-intro">Match the center symbol by choosing its button. Complete five correct matches in each round.</p>
+            <div class="hick-game" id="hickGame">
+              <p class="hick-status" id="hickStatus" role="status" aria-live="polite">Start the decision test when ready.</p>
+              <div class="hick-symbol-stage" aria-label="Symbol to match">
+                <span class="hick-symbol" id="hickSymbol" aria-live="polite">?</span>
+              </div>
+              <div class="hick-choices" id="hickChoices" aria-label="Sorting choices"></div>
+              <button class="btn magnetic" id="hickStart" type="button">Start Decision Test</button>
+            </div>
+            <div class="hick-results" id="hickResults" aria-live="polite" hidden>
+              <p id="hickRoundOneResult"></p>
+              <p id="hickRoundTwoResult"></p>
+              <p class="hick-principle">HCI Principle Displayed: Hick's Law - Increasing the number of choices logarithmically increases decision time.</p>
+            </div>
+          </section>
+
+          <section class="panel reveal" style="--i:7" aria-labelledby="gestaltTitle">
+            <h2 class="panel-title" id="gestaltTitle">Security Override: Gestalt Laws</h2>
+            <p class="gestalt-intro">Find the pattern in each round: spot the odd shape, identify the tight cluster, then complete the broken circle.</p>
+            <div class="gestalt-game">
+              <p class="gestalt-status" id="gestaltStatus" role="status" aria-live="polite">Start the override to begin three quick rounds.</p>
+              <div class="gestalt-grid" id="gestaltGrid" role="group" aria-label="Gestalt visual pattern game"></div>
+              <button class="btn magnetic" id="gestaltStart" type="button">Start Security Override</button>
+            </div>
+            <div class="gestalt-results" id="gestaltResults" aria-live="polite" hidden>
+              <p id="gestaltTotalTime"></p>
+              <p class="gestalt-principle">OVERRIDE SUCCESSFUL. HCI Principle Displayed: Gestalt Psychology - The human eye naturally organizes chaotic visual elements into unified groups based on similarity and proximity.</p>
+            </div>
+          </section>
+        </div>
+
+        <!-- ========================= RIGHT COLUMN ======================== -->
+        <div class="col">
+
+          <section class="panel reveal" style="--i:3" aria-labelledby="roadmapTitle">
+            <h2 class="panel-title" id="roadmapTitle">Academic Roadmap</h2>
+            <ol class="timeline" id="timeline"></ol>
+          </section>
+
+          <section class="panel reveal" style="--i:4" aria-labelledby="skillsTitle">
+            <h2 class="panel-title" id="skillsTitle">Technical Skills // Verify Modules</h2>
+            <div class="skills" id="skills" role="group" aria-label="Technical skills"></div>
+          </section>
+
+          <section class="panel reveal" style="--i:5" aria-labelledby="badgesTitle">
+            <h2 class="panel-title" id="badgesTitle">Achievements Unlocked</h2>
+            <div class="badges" id="badges"></div>
+          </section>
+
+          <section class="panel reveal" style="--i:6" aria-labelledby="logTitle">
+            <div class="log-heading">
+              <h2 class="panel-title" id="logTitle">Deployment Log</h2>
+              <button class="btn decrypt-button magnetic" id="memoryTestStart" type="button">Decrypt Core (Memory Test)</button>
+            </div>
+            <div class="log" id="log" role="log" aria-live="polite" tabindex="0" aria-label="Deployment log output"></div>
+          </section>
+
+          <section class="panel reveal" style="--i:7" aria-labelledby="feedbackTitle">
+            <h2 class="panel-title" id="feedbackTitle">Instructor Feedback</h2>
+            <form class="feedback-form" id="feedbackForm">
+              <div class="feedback-fields">
+                <div class="feedback-field">
+                  <label for="feedbackName">Your name <span aria-hidden="true">*</span></label>
+                  <input id="feedbackName" name="name" autocomplete="name" required>
+                </div>
+                <div class="feedback-field">
+                  <label for="feedbackEmail">Your email (optional)</label>
+                  <input id="feedbackEmail" name="email" type="email" autocomplete="email">
+                </div>
+                <div class="feedback-field full">
+                  <label for="feedbackTopic">Feedback topic</label>
+                  <select id="feedbackTopic" name="topic">
+                    <option>General feedback</option>
+                    <option>Course content</option>
+                    <option>Teaching and support</option>
+                    <option>Website evaluation</option>
+                    <option>Other</option>
+                  </select>
+                </div>
+                <div class="feedback-field full">
+                  <label for="feedbackMessage">Your feedback <span aria-hidden="true">*</span></label>
+                  <textarea id="feedbackMessage" name="message" required placeholder="Share any comments or suggestions..."></textarea>
+                </div>
+              </div>
+              <button class="btn magnetic" type="submit">Send Feedback</button>
+              <p class="feedback-note">Feedback delivery requires a configured Formspree form. Do not include sensitive information.</p>
+              <p class="feedback-status" id="feedbackStatus" role="status" aria-live="polite"></p>
+            </form>
+          </section>
+        </div>
+      </div>
+    </main>
+
+    <footer class="footer reveal" style="--i:7">
+      <p>HCI heuristics applied in this page:</p>
+      <ul class="chips">
+        <li class="chip">Visibility of system status</li>
+        <li class="chip">Immediate feedback</li>
+        <li class="chip">User control &amp; freedom</li>
+        <li class="chip">Consistency &amp; standards</li>
+        <li class="chip">Accessibility (keyboard, ARIA, reduced motion)</li>
+      </ul>
+      <p>RICO@2026</p>
+    </footer>
+  </div>
+
+  <div class="overlay anti-ui-overlay" id="jakobOverlay" role="dialog" aria-modal="true" aria-labelledby="jakobTitle" hidden>
+    <div class="anti-ui-card">
+      <h2 id="jakobTitle">ANTI-UI MODE</h2>
+      <p class="anti-ui-countdown" id="jakobCountdown" role="status" aria-live="polite" tabindex="-1">
+        Restoring the familiar interface in <strong id="jakobSeconds">10</strong> seconds.
+      </p>
+      <p class="anti-ui-message" id="jakobMessage" role="alert" hidden></p>
+      <button class="btn" id="jakobClose" type="button" hidden>Continue</button>
+    </div>
+  </div>
+
+  <span class="xray-note" id="ringXrayNote" role="note" hidden>Heuristic: Immediate Feedback</span>
+  <span class="xray-note" id="timelineXrayNote" role="note" hidden>Heuristic: User Control</span>
+  <svg class="sr-only" aria-hidden="true" focusable="false">
+    <filter id="protanopiaFilter" color-interpolation-filters="sRGB">
+      <feColorMatrix type="matrix" values="
+        0.567 0.433 0 0 0
+        0.558 0.442 0 0 0
+        0     0.242 0.758 0 0
+        0     0     0     1 0"/>
+    </filter>
+  </svg>
+  <div class="vision-mask" id="visionMask" aria-hidden="true" hidden></div>
+  <div class="vision-status" id="visionStatus" role="status" aria-live="polite" hidden>
+    <span class="vision-condition" id="visionCondition"></span>
+    <span>HCI Principle: Universal Design &amp; Accessibility - UI must remain usable under varying physical constraints.</span>
+  </div>
+  <div class="easter-egg" id="easterEgg" role="status" aria-live="polite" hidden>
+    Admin Access Granted for Sir Gian Carlo
+  </div>
+
+  <div class="overlay command-overlay" id="commandPalette" role="dialog" aria-modal="true" aria-labelledby="commandTitle" hidden>
+    <div class="command-dialog">
+      <h2 id="commandTitle">COMMAND PALETTE</h2>
+      <label class="sr-only" for="commandInput">Search dashboard actions</label>
+      <input id="commandInput" type="search" autocomplete="off" placeholder="Type an action...">
+      <div class="command-list" id="commandList">
+        <button class="command-item" type="button" data-command="theme">Toggle Theme</button>
+        <button class="command-item" type="button" data-command="xray">Toggle X-Ray</button>
+        <button class="command-item" type="button" data-command="feedback">Jump to Feedback</button>
+        <button class="command-item" type="button" data-command="skills">Jump to Skills</button>
+      </div>
+      <p class="command-empty" id="commandEmpty" role="status" aria-live="polite"></p>
+      <p class="command-help">Use Ctrl+K or Cmd+K to open. Press Escape to close.</p>
+    </div>
+  </div>
+
+  <!-- Finale: salute dialog + confetti layer -->
+  <div class="overlay" id="salute" role="dialog" aria-modal="true" aria-labelledby="saluteTitle" aria-describedby="saluteText" hidden>
+    <div class="salute-card">
+      <div class="salute-icon" aria-hidden="true">&#127942;</div>
+      <h2 id="saluteTitle">System Audit Complete.</h2>
+      <p id="saluteText">Core Competency Confirmed. Salutations, Sir Gian Carlo!</p>
+      <div class="salute-actions">
+        <button class="btn magnetic" type="button" id="saluteClose">Continue Exploring</button>
+        <button class="btn magnetic" type="button" id="saluteReplay">Replay Confetti</button>
+      </div>
+    </div>
+  </div>
+  <div class="confetti" id="confetti" aria-hidden="true"></div>
+
+  <script>
+    /* =====================================================================
+       DEVELOPER CORE DASHBOARD - Vanilla JavaScript (ES6+)
+       Sections:
+         1. Config & static data
+         2. State & helpers
+         3. Deployment log
+         4. Retention engine (60-second meter)
+         5. Audit quest engine
+         6. Interactive modules (timeline, skills, badges, links, themes, HCI X-ray)
+         7. Finale (dialog + confetti)
+         8. Magnetic micro-interactions
+         9. Bootstrap
+       ===================================================================== */
+    (() => {
+      'use strict';
+
+      /* ---------- 1. CONFIG & STATIC DATA ---------- */
+      const CONFIG = Object.freeze({
+        GOAL_SECONDS: 60,        // length of the retention meter
+        TICK_MS: 200,            // meter refresh rate
+        LOG_LIMIT: 40,           // max log lines kept in the DOM (memory safety)
+        RING_RADIUS: 34,         // must match the <circle r="34"> in the SVG
+        MAGNET_STRENGTH: 14,     // px of magnetic travel
+        LINK_ARM_MS: 5000,       // how long a social button stays "armed"
+        CONFETTI_COUNT: 140,
+        FORMSPREE_ENDPOINT: 'https://formspree.io/f/YOUR_FORM_ID',
+        STORAGE_KEY: 'rico-dashboard-progress-v1'
+      });
+
+      // Status text shown as the meter passes each milestone
+      const STAGES = Object.freeze([
+        { at: 0,  text: 'Initializing Evaluation...' },
+        { at: 15, text: 'Analyzing Layout...' },
+        { at: 30, text: 'Parsing Source Nodes...' },
+        { at: 45, text: 'UX Feedback Verified...' },
+        { at: 60, text: 'HCI Standard Achieved!' }
+      ]);
+
+      // Evaluation objectives: each contributes equally to the audit percentage
+      const QUEST = Object.freeze([
+        { id: 'timeline', label: 'Inspect timeline nodes',  target: 3,  hint: 'Click 3 nodes on the Academic Roadmap.' },
+        { id: 'skills',   label: 'Verify skill modules',    target: 3,  hint: 'Check 3 skills in Technical Skills.' },
+        { id: 'badges',   label: 'Inspect achievements',    target: 3,  hint: 'Hover (or tap) all 3 trophies.' },
+        { id: 'links',    label: 'Probe external links',    target: 2,  hint: 'Click 2 handles in the Links Matrix.' },
+        { id: 'theme',    label: 'Shift terminal mode',     target: 1,  hint: 'Flip the Night/Day terminal switch in the header.' },
+        { id: 'time',     label: 'Hold the session',        target: 60, hint: 'Stay on the page until the meter hits 60s.' }
+      ]);
+
+      const TIMELINE = Object.freeze([
+        { level: 'LVL 01', title: 'Primary School', school: 'Nocnocan Elementary School', meta: 'GRADUATED 2018', state: 'done',
+          detail: 'Foundation module. The first checkpoint of the roadmap, cleared at Nocnocan Elementary School in 2018.' },
+        { level: 'LVL 02', title: 'Secondary School', school: 'San Jose National High School', meta: 'GRADUATED 2022', state: 'done',
+          detail: 'Core academic modules cleared at San Jose National High School, graduating in 2022.' },
+        { level: 'LVL 03', title: 'Senior High School', school: 'San Jose National High School', meta: 'GRADUATED 2024', state: 'done',
+          detail: 'Senior High cleared at San Jose National High School in 2024, graduating With Honor. The "Academic Honor Node" badge was unlocked here.' },
+        { level: 'SPEC',   title: 'Track-Strand', school: 'Technical-Vocational-Livelihood (TVL-ICT)', meta: 'SPECIALIZATION', state: 'done',
+          detail: 'The ICT-focused specialization taken during Senior High: Technical-Vocational-Livelihood, TVL-ICT.' },
+        { level: 'LVL 04', title: 'College', school: 'University of Cebu Main Campus', meta: 'CURRENT: BSIT 3RD YEAR', state: 'current',
+          detail: 'Currently enrolled in BSIT 3rd Year at the University of Cebu Main Campus. Status: ACTIVE, still compiling.' }
+      ]);
+
+      const SKILLS = Object.freeze([
+        { name: 'HTML5',                  note: 'Semantic, accessible page structure.' },
+        { name: 'CSS3',                   note: 'Grid, Flexbox, custom properties, transitions.' },
+        { name: 'Modern JavaScript (ES6+)', note: 'Arrow functions, const/let, template literals, modules of logic.' },
+        { name: 'Responsive Layouts',     note: 'Fluid grids that adapt to any viewport.' },
+        { name: 'UI/UX Wireframing',      note: 'Planning interfaces from sketch to hi-fi.' },
+        { name: 'HCI Principles',         note: 'Feedback, affordance, consistency, visibility of system status.' },
+        { name: 'Git',                    note: 'Version control: commits, branches, history.' }
+      ]);
+
+      const BADGES = Object.freeze([
+        { icon: '\u{1F393}', title: 'Academic Honor Node', desc: 'With Honor in Senior High School' },
+        { icon: '\u{1F3A8}', title: 'Master Artisan',      desc: 'Most Creative Artwork Award' },
+        { icon: '\u{1F91D}', title: 'Active Contributor',  desc: 'Participation Award' }
+      ]);
+
+      const HOBBIES = Object.freeze([
+        { icon: '\u{1F3AE}', name: 'Competitive Gaming' },
+        { icon: '\u{1F3A7}', name: 'Lo-Fi Coding' },
+        { icon: '\u2728',    name: 'UI Micro-animations' },
+        { icon: '\u{1F5BC}\uFE0F', name: 'Digital Artwork' },
+        { icon: '\u{1F527}', name: 'Tech Tinkering' }
+      ]);
+
+      /* ---------- 2. STATE & HELPERS ---------- */
+      const state = {
+        elapsed: 0,                 // seconds the page has been visible
+        lastTick: performance.now(),
+        stageIndex: -1,
+        themeShifts: 0,
+        finished: false,
+        lastPct: -1,
+        seen: {                     // Sets keep each interaction counted only once
+          timeline: new Set(),
+          skills: new Set(),
+          badges: new Set(),
+          links: new Set()
+        },
+        activeSkills: new Set()
+      };
+      let progressStorageUnavailable = false;
+      let lastSavedProgress = '';
+
+      const $ = (selector, root = document) => root.querySelector(selector);
+      const $$ = (selector, root = document) => Array.from(root.querySelectorAll(selector));
+      const matches = (query) => typeof window.matchMedia === 'function' && window.matchMedia(query).matches;
+      const reduceMotion = matches('(prefers-reduced-motion: reduce)');
+      const clamp = (n, min, max) => Math.min(Math.max(n, min), max);
+      const rand = (min, max) => min + Math.random() * (max - min);
+
+      const mmss = (sec) => {
+        const m = Math.floor(sec / 60);
+        const s = Math.floor(sec % 60);
+        return `${m}:${String(s).padStart(2, '0')}`;
+      };
+
+      // Cached DOM references
+      const dom = {
+        ring: $('#ring'), ringFill: $('#ringFill'), retTime: $('#retTime'), retStatus: $('#retStatus'),
+        milestones: $$('#milestones li'),
+        mission: $('#mission'), auditPct: $('#auditPct'), auditBar: $('#auditBar'), auditFill: $('#auditFill'),
+        nextHint: $('#nextHint'), objectives: $('#objectives'),
+        timeline: $('#timeline'), skills: $('#skills'), badges: $('#badges'), hobbies: $('#hobbies'),
+        reflexBoard: $('#reflexBoard'), reflexStart: $('#reflexStart'),
+        reflexStatus: $('#reflexStatus'), reflexResult: $('#reflexResult'),
+        reflexAverage: $('#reflexAverage'),
+        hickStatus: $('#hickStatus'), hickSymbol: $('#hickSymbol'),
+        hickChoices: $('#hickChoices'), hickStart: $('#hickStart'),
+        hickResults: $('#hickResults'), hickRoundOneResult: $('#hickRoundOneResult'),
+        hickRoundTwoResult: $('#hickRoundTwoResult'),
+        gestaltStatus: $('#gestaltStatus'), gestaltGrid: $('#gestaltGrid'),
+        gestaltStart: $('#gestaltStart'), gestaltResults: $('#gestaltResults'),
+        gestaltTotalTime: $('#gestaltTotalTime'),
+        memoryTestStart: $('#memoryTestStart'),
+        log: $('#log'), linksGrid: $('#linksGrid'), linkHint: $('#linkHint'),
+        feedbackForm: $('#feedbackForm'), feedbackStatus: $('#feedbackStatus'),
+        themeToggle: $('#themeToggle'), themeLabel: $('#themeLabel'),
+        audioToggle: $('#audioToggle'), commandToggle: $('#commandToggle'),
+        xrayToggle: $('#xrayToggle'), visionSimulatorToggle: $('#visionSimulatorToggle'),
+        visionMask: $('#visionMask'), visionStatus: $('#visionStatus'),
+        visionCondition: $('#visionCondition'), ringXrayNote: $('#ringXrayNote'),
+        timelineXrayNote: $('#timelineXrayNote'), easterEgg: $('#easterEgg'),
+        jakobToggle: $('#jakobToggle'), jakobOverlay: $('#jakobOverlay'),
+        jakobCountdown: $('#jakobCountdown'), jakobSeconds: $('strong', $('#jakobCountdown')),
+        jakobMessage: $('#jakobMessage'), jakobClose: $('#jakobClose'),
+        commandPalette: $('#commandPalette'), commandInput: $('#commandInput'),
+        commandList: $('#commandList'), commandEmpty: $('#commandEmpty'),
+        salute: $('#salute'), saluteClose: $('#saluteClose'), saluteReplay: $('#saluteReplay'),
+        confetti: $('#confetti')
+      };
+
+      /* ---------- 3. DEPLOYMENT LOG ---------- */
+      const logTimers = new Map();
+      const memoryGameTimers = new Set();
+      let memoryGameActive = false;
+
+      /**
+       * Appends a timestamped line to the log panel with a typewriter effect.
+       * textContent (never innerHTML) keeps it injection-safe, and old lines are
+       * trimmed so the DOM never grows without bound.
+       */
+      function log(message, level = 'info') {
+        if (memoryGameActive) return;
+        const line = document.createElement('p');
+        const text = `[T+${mmss(state.elapsed)}] ${message}`;
+        let index = 0;
+        line.className = `log-line log-${level}`;
+        line.setAttribute('aria-label', text);
+        dom.log.appendChild(line);
+        while (dom.log.children.length > CONFIG.LOG_LIMIT) {
+          const oldest = dom.log.firstElementChild;
+          const timer = logTimers.get(oldest);
+          if (timer) window.clearInterval(timer);
+          logTimers.delete(oldest);
+          oldest.remove();
+        }
+        const timer = window.setInterval(() => {
+          index += 1;
+          line.textContent = text.slice(0, index);
+          dom.log.scrollTop = dom.log.scrollHeight;
+          if (index >= text.length) {
+            window.clearInterval(timer);
+            logTimers.delete(line);
+          }
+        }, 15);
+        logTimers.set(line, timer);
+      }
+
+      function clearDeploymentLog() {
+        logTimers.forEach((timer) => window.clearInterval(timer));
+        logTimers.clear();
+        dom.log.replaceChildren();
+      }
+
+      function scheduleMemoryGame(callback, delay) {
+        const timer = window.setTimeout(() => {
+          memoryGameTimers.delete(timer);
+          callback();
+        }, delay);
+        memoryGameTimers.add(timer);
+      }
+
+      function typeMemoryMessage(message, level, onComplete) {
+        const line = document.createElement('p');
+        let index = 0;
+        line.className = `log-line log-${level}`;
+        line.setAttribute('aria-label', message);
+        dom.log.appendChild(line);
+        const timer = window.setInterval(() => {
+          index += 1;
+          line.textContent = message.slice(0, index);
+          dom.log.scrollTop = dom.log.scrollHeight;
+          if (index >= message.length) {
+            window.clearInterval(timer);
+            logTimers.delete(line);
+            if (onComplete) onComplete();
+          }
+        }, 15);
+        logTimers.set(line, timer);
+      }
+
+      function initMemoryTest() {
+        const directions = ['UP', 'DOWN', 'LEFT', 'RIGHT'];
+        const keyForDirection = {
+          ArrowUp: 'UP',
+          ArrowDown: 'DOWN',
+          ArrowLeft: 'LEFT',
+          ArrowRight: 'RIGHT'
+        };
+        let sequence = [];
+        let entered = [];
+        let keyHandler = null;
+
+        const finish = (success) => {
+          if (keyHandler) {
+            document.removeEventListener('keydown', keyHandler);
+            keyHandler = null;
+          }
+          typeMemoryMessage(
+            success ? 'SYSTEM OVERRIDE SUCCESS' : 'ACCESS DENIED - MEMORY LIMIT REACHED',
+            success ? 'ok' : 'warn',
+            () => {
+              memoryGameActive = false;
+              dom.memoryTestStart.disabled = false;
+            }
+          );
+          sequence = [];
+          entered = [];
+        };
+
+        const askForSequence = () => {
+          typeMemoryMessage('SEQUENCE HIDDEN. ENTER WITH ARROW KEYS.', 'info', () => {
+            dom.log.focus();
+            keyHandler = (event) => {
+              const direction = keyForDirection[event.key];
+              if (!direction) return;
+              event.preventDefault();
+              entered.push(direction);
+              const index = entered.length - 1;
+              if (entered[index] !== sequence[index]) {
+                finish(false);
+                return;
+              }
+              if (entered.length === sequence.length) finish(true);
+            };
+            document.addEventListener('keydown', keyHandler);
+          });
+        };
+
+        const showSequenceItem = (index) => {
+          if (index >= sequence.length) {
+            askForSequence();
+            return;
+          }
+          const line = document.createElement('p');
+          line.className = 'log-line log-info';
+          line.textContent = sequence[index];
+          dom.log.appendChild(line);
+          dom.log.scrollTop = dom.log.scrollHeight;
+          scheduleMemoryGame(() => {
+            dom.log.replaceChildren();
+            showSequenceItem(index + 1);
+          }, 600);
+        };
+
+        dom.memoryTestStart.addEventListener('click', () => {
+          if (memoryGameActive) return;
+          memoryGameActive = true;
+          sequence = Array.from({ length: 5 }, () => directions[Math.floor(Math.random() * directions.length)]);
+          entered = [];
+          clearDeploymentLog();
+          dom.memoryTestStart.disabled = true;
+          typeMemoryMessage('MEMORIZING SEQUENCE...', 'info', () => {
+            scheduleMemoryGame(() => showSequenceItem(0), 250);
+          });
+        });
+
+        window.addEventListener('pagehide', () => {
+          if (keyHandler) document.removeEventListener('keydown', keyHandler);
+          keyHandler = null;
+          memoryGameTimers.forEach((timer) => window.clearTimeout(timer));
+          memoryGameTimers.clear();
+        }, { once: true });
+      }
+
+      function restoreProgress() {
+        let raw;
+        try {
+          raw = window.localStorage.getItem(CONFIG.STORAGE_KEY);
+          if (!raw) return;
+        } catch (error) {
+          progressStorageUnavailable = true;
+          console.error('Unable to load saved dashboard progress.', error);
+          return;
+        }
+
+        let saved;
+        try {
+          saved = JSON.parse(raw);
+        } catch (error) {
+          console.error('Saved dashboard progress is invalid JSON.', error);
+          return;
+        }
+        if (!saved || saved.version !== 1 || typeof saved !== 'object') return;
+        if (Number.isFinite(saved.elapsed) && saved.elapsed >= 0) state.elapsed = saved.elapsed;
+        if (Number.isFinite(saved.themeShifts) && saved.themeShifts >= 0) {
+          state.themeShifts = Math.floor(saved.themeShifts);
+        }
+
+        const validIndices = {
+          timeline: TIMELINE.length,
+          skills: SKILLS.length,
+          badges: BADGES.length
+        };
+        Object.entries(validIndices).forEach(([key, length]) => {
+          const values = saved.seen && saved.seen[key];
+          if (!Array.isArray(values)) return;
+          values.forEach((value) => {
+            if (Number.isInteger(value) && value >= 0 && value < length) state.seen[key].add(value);
+          });
+        });
+        const activeSkills = Array.isArray(saved.activeSkills) ? saved.activeSkills : saved.seen && saved.seen.skills;
+        if (Array.isArray(activeSkills)) {
+          activeSkills.forEach((value) => {
+            if (Number.isInteger(value) && value >= 0 && value < SKILLS.length) state.activeSkills.add(value);
+          });
+        }
+
+        const validLinks = new Set($$('button[data-net]', dom.linksGrid).map((button) => button.dataset.net));
+        if (saved.seen && Array.isArray(saved.seen.links)) {
+          saved.seen.links.forEach((value) => {
+            if (validLinks.has(value)) state.seen.links.add(value);
+          });
+        }
+
+        if (['dark', 'light', 'high-contrast'].includes(saved.theme)) {
+          document.documentElement.dataset.theme = saved.theme;
+        }
+        state.finished = QUEST.every((quest) => questValue(quest.id) >= quest.target);
+        lastSavedProgress = JSON.stringify(saved);
+      }
+
+      function saveProgress() {
+        if (progressStorageUnavailable) return;
+        const progress = {
+          version: 1,
+          elapsed: Math.floor(state.elapsed),
+          themeShifts: state.themeShifts,
+          theme: document.documentElement.dataset.theme,
+          activeSkills: [...state.activeSkills],
+          seen: {
+            timeline: [...state.seen.timeline],
+            skills: [...state.seen.skills],
+            badges: [...state.seen.badges],
+            links: [...state.seen.links]
+          }
+        };
+        const serialized = JSON.stringify(progress);
+        if (serialized === lastSavedProgress) return;
+        try {
+          window.localStorage.setItem(CONFIG.STORAGE_KEY, serialized);
+          lastSavedProgress = serialized;
+        } catch (error) {
+          progressStorageUnavailable = true;
+          console.error('Unable to save dashboard progress.', error);
+        }
+      }
+
+      /* ---------- 4. RETENTION ENGINE (60-SECOND METER) ---------- */
+      const RING_CIRCUMFERENCE = 2 * Math.PI * CONFIG.RING_RADIUS;
+
+      function initRing() {
+        dom.ringFill.style.strokeDasharray = RING_CIRCUMFERENCE.toFixed(3);
+        dom.ringFill.style.strokeDashoffset = RING_CIRCUMFERENCE.toFixed(3);
+      }
+
+      function currentStageIndex() {
+        let index = 0;
+        STAGES.forEach((stage, i) => { if (state.elapsed >= stage.at) index = i; });
+        return index;
+      }
+
+      function renderRetention() {
+        const progress = clamp(state.elapsed / CONFIG.GOAL_SECONDS, 0, 1);
+        dom.ringFill.style.strokeDashoffset = (RING_CIRCUMFERENCE * (1 - progress)).toFixed(3);
+
+        const overGoal = state.elapsed >= CONFIG.GOAL_SECONDS;
+        const clock = mmss(state.elapsed) + (overGoal ? '+' : '');
+        if (dom.retTime.textContent !== clock) dom.retTime.textContent = clock;
+
+        dom.milestones.forEach((li) => {
+          li.classList.toggle('hit', state.elapsed >= Number(li.dataset.at));
+        });
+
+        const index = currentStageIndex();
+        if (index !== state.stageIndex) {
+          state.stageIndex = index;
+          dom.retStatus.textContent = STAGES[index].text;
+          dom.ring.classList.toggle('complete', index === STAGES.length - 1);
+          if (index > 0) log(`Milestone ${STAGES[index].at}s reached :: ${STAGES[index].text}`, 'ok');
+        }
+      }
+
+      /**
+       * Advances the clock. Time only accumulates while the tab is visible, and
+       * each step is capped at 1s so a throttled timer can never cause a jump.
+       */
+      function tick() {
+        const now = performance.now();
+        const delta = Math.min((now - state.lastTick) / 1000, 1);
+        state.lastTick = now;
+        if (!document.hidden) state.elapsed += delta;
+        renderRetention();
+        renderQuest();
+      }
+
+      /* ---------- 5. AUDIT QUEST ENGINE ---------- */
+      const objectiveRefs = new Map(); // quest id -> { li, count }
+
+      function questValue(id) {
+        switch (id) {
+          case 'time':  return Math.floor(state.elapsed);
+          case 'theme': return state.themeShifts;
+          default:      return state.seen[id].size;
+        }
+      }
+
+      function buildObjectives() {
+        QUEST.forEach((q) => {
+          const li = document.createElement('li');
+          li.className = 'objective';
+
+          const check = document.createElement('span');
+          check.className = 'obj-check';
+          check.setAttribute('aria-hidden', 'true');
+          check.textContent = '\u2713';
+
+          const label = document.createElement('span');
+          label.className = 'obj-label';
+          label.textContent = q.label;
+
+          const count = document.createElement('span');
+          count.className = 'obj-count';
+
+          li.append(check, label, count);
+          dom.objectives.appendChild(li);
+          objectiveRefs.set(q.id, { li, count });
+        });
+      }
+
+      function renderQuest() {
+        const ratios = QUEST.map((q) => clamp(questValue(q.id) / q.target, 0, 1));
+        const allDone = ratios.every((r) => r >= 1);
+        const average = ratios.reduce((sum, r) => sum + r, 0) / QUEST.length;
+        // Never show 100% until EVERY objective is complete
+        const pct = allDone ? 100 : Math.min(99, Math.floor(average * 100));
+
+        if (pct !== state.lastPct) {
+          state.lastPct = pct;
+          dom.auditPct.textContent = `${pct}%`;
+          dom.auditFill.style.width = `${pct}%`;
+          dom.auditBar.setAttribute('aria-valuenow', String(pct));
+        }
+
+        let nextHint = null;
+        QUEST.forEach((q, i) => {
+          const value = clamp(questValue(q.id), 0, q.target);
+          const ref = objectiveRefs.get(q.id);
+          const countText = q.id === 'time' ? `${value}s / ${q.target}s` : `${value} / ${q.target}`;
+          if (ref.count.textContent !== countText) ref.count.textContent = countText;
+
+          const done = ratios[i] >= 1;
+          if (ref.li.classList.contains('done') !== done) {
+            ref.li.classList.toggle('done', done);
+            if (done) log(`Objective cleared :: ${q.label}`, 'ok');
+          }
+          if (!done && nextHint === null) nextHint = q.hint;
+        });
+
+        const hintText = allDone
+          ? 'ALL OBJECTIVES CLEARED :: Core competency confirmed.'
+          : `NEXT > ${nextHint}`;
+        if (dom.nextHint.textContent !== hintText) dom.nextHint.textContent = hintText;
+
+        if (state.finished) dom.mission.classList.add('complete');
+        saveProgress();
+        if (allDone && !state.finished) completeAudit();
+      }
+
+      /* ---------- 6. INTERACTIVE MODULES ---------- */
+      // 6a. Timeline (accordion; one node open at a time)
+      function buildTimeline() {
+        TIMELINE.forEach((node, i) => {
+          const li = document.createElement('li');
+          li.className = `tl-item${node.state === 'current' ? ' current' : ''}${state.seen.timeline.has(i) ? ' visited' : ''}`;
+          li.innerHTML = `
+            <span class="tl-dot" aria-hidden="true"></span>
+            <button class="tl-node" type="button" id="tl-btn-${i}" data-index="${i}"
+                    aria-expanded="false" aria-controls="tl-panel-${i}">
+              <span>
+                <span class="tl-level">${node.level}</span>
+                <strong class="tl-title">${node.title}</strong>
+                <span class="tl-school">${node.school}</span>
+              </span>
+              <span class="tl-caret" aria-hidden="true">&#9656;</span>
+            </button>
+            <div class="tl-panel" id="tl-panel-${i}" role="region" aria-labelledby="tl-btn-${i}">
+              <div>
+                <div class="tl-body">
+                  <span class="tl-meta">${node.meta}</span>
+                  <p>${node.detail}</p>
+                </div>
+              </div>
+            </div>`;
+          dom.timeline.appendChild(li);
+        });
+
+        dom.timeline.addEventListener('click', (event) => {
+          const button = event.target.closest('.tl-node');
+          if (!button) return;
+          const index = Number(button.dataset.index);
+          const willOpen = button.getAttribute('aria-expanded') !== 'true';
+
+          // Close every node first (single-open accordion)
+          $$('.tl-node', dom.timeline).forEach((b) => {
+            b.setAttribute('aria-expanded', 'false');
+            b.parentElement.querySelector('.tl-panel').classList.remove('open');
+          });
+
+          if (willOpen) {
+            const node = TIMELINE[index];
+            button.setAttribute('aria-expanded', 'true');
+            button.parentElement.querySelector('.tl-panel').classList.add('open');
+            button.parentElement.classList.add('visited');
+            if (!state.seen.timeline.has(index)) {
+              log(`Node ${node.level} loaded :: ${node.school} :: ${node.meta}`, 'info');
+            }
+            state.seen.timeline.add(index);
+          }
+          renderQuest();
+        });
+      }
+
+      // 6b. Skills (toggle buttons)
+      function buildSkills() {
+        SKILLS.forEach((skill, i) => {
+          const button = document.createElement('button');
+          button.type = 'button';
+          button.className = 'skill magnetic';
+          button.dataset.index = String(i);
+          button.setAttribute('aria-pressed', String(state.activeSkills.has(i)));
+          button.textContent = skill.name;
+          dom.skills.appendChild(button);
+        });
+
+        dom.skills.addEventListener('click', (event) => {
+          const button = event.target.closest('.skill');
+          if (!button) return;
+          const index = Number(button.dataset.index);
+          const skill = SKILLS[index];
+          const nowOn = button.getAttribute('aria-pressed') !== 'true';
+          button.setAttribute('aria-pressed', String(nowOn));
+
+          if (nowOn) {
+            log(`Skill module verified :: ${skill.name} :: ${skill.note}`, 'ok');
+            state.seen.skills.add(index);
+            state.activeSkills.add(index);
+          } else {
+            log(`Skill module unchecked :: ${skill.name}`, 'warn');
+            state.activeSkills.delete(index);
+          }
+          renderQuest();
+        });
+      }
+
+      // 6c. Achievement badges (hover, keyboard focus OR tap all count as "inspect")
+      function buildBadges() {
+        BADGES.forEach((badge, i) => {
+          const card = document.createElement('article');
+          card.className = 'badge';
+          if (state.seen.badges.has(i)) card.classList.add('inspected');
+          card.tabIndex = 0;
+          card.dataset.index = String(i);
+          card.innerHTML = `
+            <span class="badge-icon" aria-hidden="true">${badge.icon}</span>
+            <h3>${badge.title}</h3>
+            <p>${badge.desc}</p>
+            <span class="badge-state">${state.seen.badges.has(i) ? 'UNLOCKED \u2713' : 'UNLOCKED'}</span>`;
+
+          const inspect = () => {
+            if (!state.seen.badges.has(i)) {
+              state.seen.badges.add(i);
+              card.classList.add('inspected');
+              card.querySelector('.badge-state').textContent = 'UNLOCKED \u2713';
+              log(`Achievement inspected :: "${badge.title}" :: ${badge.desc}`, 'ok');
+              renderQuest();
+            }
+          };
+          card.addEventListener('pointerenter', inspect);
+          card.addEventListener('focus', inspect);
+          card.addEventListener('click', inspect);
+          dom.badges.appendChild(card);
+        });
+      }
+
+      // 6d. Hobbies
+      function buildHobbies() {
+        HOBBIES.forEach((hobby) => {
+          const li = document.createElement('li');
+          li.className = 'chip';
+          li.textContent = `${hobby.icon} ${hobby.name}`;
+          dom.hobbies.appendChild(li);
+        });
+      }
+
+      function initReflexTester() {
+        const totalTargets = 10;
+        let completedTargets = 0;
+        let reactionTimes = [];
+        let targetShownAt = 0;
+
+        const showTarget = () => {
+          const boardWidth = dom.reflexBoard.clientWidth;
+          const boardHeight = dom.reflexBoard.clientHeight;
+          const maxWidth = Math.min(70, boardWidth);
+          const maxHeight = Math.min(70, boardHeight);
+          const width = Math.floor(rand(15, maxWidth) + 1);
+          const height = Math.floor(rand(15, maxHeight) + 1);
+          const target = document.createElement('button');
+          target.type = 'button';
+          target.className = 'reflex-target magnetic';
+          target.setAttribute('aria-label', `Reflex target ${completedTargets + 1} of ${totalTargets}`);
+          target.style.width = `${width}px`;
+          target.style.height = `${height}px`;
+          target.style.left = `${Math.floor(Math.random() * (boardWidth - width + 1))}px`;
+          target.style.top = `${Math.floor(Math.random() * (boardHeight - height + 1))}px`;
+          targetShownAt = performance.now();
+          dom.reflexBoard.replaceChildren(target);
+        };
+
+        dom.reflexStart.addEventListener('click', () => {
+          completedTargets = 0;
+          reactionTimes = [];
+          dom.reflexResult.hidden = true;
+          dom.reflexAverage.textContent = '';
+          dom.reflexStart.textContent = 'Restart Calibration';
+          dom.reflexStatus.textContent = `Target 1 of ${totalTargets}`;
+          showTarget();
+        });
+
+        dom.reflexBoard.addEventListener('click', (event) => {
+          const target = event.target instanceof Element ? event.target.closest('.reflex-target') : null;
+          if (!target) return;
+
+          reactionTimes.push(performance.now() - targetShownAt);
+          completedTargets += 1;
+          if (completedTargets === totalTargets) {
+            dom.reflexBoard.replaceChildren();
+            const average = reactionTimes.reduce((sum, time) => sum + time, 0) / reactionTimes.length;
+            dom.reflexStatus.textContent = 'Calibration complete.';
+            dom.reflexAverage.textContent = `Average reaction time: ${Math.round(average)} ms across ${totalTargets} targets.`;
+            dom.reflexResult.hidden = false;
+            dom.reflexStart.textContent = 'Start Again';
+            return;
+          }
+
+          dom.reflexStatus.textContent = `Target ${completedTargets + 1} of ${totalTargets}`;
+          showTarget();
+        });
+      }
+
+      function initHickTest() {
+        const coreSymbols = ['∆', 'O', 'X', '□'];
+        const distractors = ['△', '◇'];
+        const trialsPerRound = 5;
+        const roundTimes = [[], []];
+        let round = 0;
+        let trial = 0;
+        let targetSymbol = '';
+        let shownAt = 0;
+        let active = false;
+
+        const shuffle = (items) => {
+          for (let i = items.length - 1; i > 0; i -= 1) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [items[i], items[j]] = [items[j], items[i]];
+          }
+          return items;
+        };
+
+        const average = (times) => times.reduce((sum, time) => sum + time, 0) / times.length;
+
+        const renderTrial = () => {
+          const isHighLoad = round === 1;
+          const choiceCount = isHighLoad ? 6 : 2;
+          const possibleChoices = isHighLoad ? [...coreSymbols, ...distractors] : [...coreSymbols];
+          targetSymbol = coreSymbols[Math.floor(Math.random() * coreSymbols.length)];
+
+          let choices;
+          if (isHighLoad) {
+            choices = shuffle(possibleChoices);
+          } else {
+            const distractor = coreSymbols.filter((symbol) => symbol !== targetSymbol)[
+              Math.floor(Math.random() * (coreSymbols.length - 1))
+            ];
+            choices = shuffle([targetSymbol, distractor]);
+          }
+
+          dom.hickSymbol.textContent = targetSymbol;
+          dom.hickStatus.textContent =
+            `Round ${round + 1} of 2 (${isHighLoad ? 'High' : 'Low'} Cognitive Load) · Match ${trial + 1} of ${trialsPerRound}`;
+          dom.hickChoices.replaceChildren(...choices.map((symbol) => {
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'hick-choice';
+            button.dataset.symbol = symbol;
+            button.textContent = symbol;
+            button.setAttribute('aria-label', `Choose ${symbol}`);
+            return button;
+          }));
+          shownAt = performance.now();
+        };
+
+        const finishRound = () => {
+          if (round === 0) {
+            round = 1;
+            trial = 0;
+            dom.hickStatus.textContent = 'Low-load round complete. High-load round starting...';
+            window.setTimeout(renderTrial, 700);
+            return;
+          }
+
+          active = false;
+          dom.hickSymbol.textContent = '✓';
+          dom.hickChoices.replaceChildren();
+          dom.hickStatus.textContent = 'Decision test complete.';
+          dom.hickStart.disabled = false;
+          dom.hickStart.textContent = 'Run Again';
+          dom.hickRoundOneResult.textContent =
+            `Round 1 · 2 choices average: ${Math.round(average(roundTimes[0]))} ms`;
+          dom.hickRoundTwoResult.textContent =
+            `Round 2 · 6 choices average: ${Math.round(average(roundTimes[1]))} ms`;
+          dom.hickResults.hidden = false;
+        };
+
+        dom.hickStart.addEventListener('click', () => {
+          round = 0;
+          trial = 0;
+          roundTimes[0] = [];
+          roundTimes[1] = [];
+          active = true;
+          dom.hickResults.hidden = true;
+          dom.hickStart.disabled = true;
+          renderTrial();
+        });
+
+        dom.hickChoices.addEventListener('click', (event) => {
+          const button = event.target instanceof Element ? event.target.closest('.hick-choice') : null;
+          if (!active || !button) return;
+          if (button.dataset.symbol !== targetSymbol) {
+            dom.hickStatus.textContent =
+              `Not a match. Try again · Round ${round + 1}, match ${trial + 1} of ${trialsPerRound}.`;
+            return;
+          }
+
+          roundTimes[round].push(performance.now() - shownAt);
+          trial += 1;
+          if (trial === trialsPerRound) {
+            finishRound();
+          } else {
+            renderTrial();
+          }
+        });
+      }
+
+      function initGestaltTest() {
+        const totalCells = 25;
+        const symbols = ['∆', 'O', 'X', '□'];
+        const corners = {
+          nw: [0, 1, 5, 6],
+          ne: [3, 4, 8, 9],
+          sw: [15, 16, 20, 21],
+          se: [18, 19, 23, 24]
+        };
+        let round = -1;
+        let roundStartedAt = 0;
+        let roundTimes = [];
+        let targetIndex = -1;
+        let clusterIndices = [];
+        let active = false;
+
+        const randomItem = (items) => items[Math.floor(Math.random() * items.length)];
+
+        const makeCell = (index, shapeClass = '') => {
+          const button = document.createElement('button');
+          const shape = document.createElement('span');
+          button.type = 'button';
+          button.className = 'gestalt-cell';
+          button.dataset.index = String(index);
+          button.setAttribute('aria-label', `Pattern ${index + 1}`);
+          shape.className = `gestalt-shape${shapeClass ? ` ${shapeClass}` : ''}`;
+          shape.setAttribute('aria-hidden', 'true');
+          button.appendChild(shape);
+          return button;
+        };
+
+        const showRound = () => {
+          roundStartedAt = performance.now();
+          dom.gestaltGrid.replaceChildren();
+
+          if (round === 0) {
+            targetIndex = Math.floor(Math.random() * totalCells);
+            for (let i = 0; i < totalCells; i += 1) {
+              dom.gestaltGrid.appendChild(makeCell(i, i === targetIndex ? 'odd-one' : ''));
+            }
+            dom.gestaltStatus.textContent = 'Round 1 of 3 · Similarity: click the purple square among the blue circles.';
+          } else if (round === 1) {
+            const corner = randomItem(Object.keys(corners));
+            clusterIndices = corners[corner];
+            for (let i = 0; i < totalCells; i += 1) {
+              const cell = makeCell(i);
+              if (clusterIndices.includes(i)) cell.classList.add(`cluster-${corner}`);
+              dom.gestaltGrid.appendChild(cell);
+            }
+            dom.gestaltStatus.textContent = 'Round 2 of 3 · Proximity: click any dot in the tightly grouped cluster.';
+          } else {
+            const closure = document.createElement('button');
+            const shape = document.createElement('span');
+            closure.type = 'button';
+            closure.className = 'gestalt-cell closure-target';
+            closure.setAttribute('aria-label', 'Complete the circle with a missing segment');
+            shape.className = 'gestalt-shape closure-shape';
+            shape.setAttribute('aria-hidden', 'true');
+            closure.appendChild(shape);
+            dom.gestaltGrid.appendChild(closure);
+            dom.gestaltStatus.textContent = 'Round 3 of 3 · Closure: click the broken circle to complete its pattern.';
+          }
+        };
+
+        const completeRound = () => {
+          roundTimes.push(performance.now() - roundStartedAt);
+          if (round < 2) {
+            round += 1;
+            showRound();
+            return;
+          }
+
+          active = false;
+          dom.gestaltGrid.replaceChildren();
+          dom.gestaltStatus.textContent = 'All three patterns identified.';
+          dom.gestaltStart.disabled = false;
+          dom.gestaltStart.textContent = 'Run Again';
+          const total = roundTimes.reduce((sum, time) => sum + time, 0);
+          dom.gestaltTotalTime.textContent =
+            `Total time: ${(total / 1000).toFixed(2)} seconds (Similarity: ${(roundTimes[0] / 1000).toFixed(2)}s, Proximity: ${(roundTimes[1] / 1000).toFixed(2)}s, Closure: ${(roundTimes[2] / 1000).toFixed(2)}s).`;
+          dom.gestaltResults.hidden = false;
+        };
+
+        dom.gestaltStart.addEventListener('click', () => {
+          active = true;
+          round = 0;
+          roundTimes = [];
+          dom.gestaltResults.hidden = true;
+          dom.gestaltTotalTime.textContent = '';
+          dom.gestaltStart.disabled = true;
+          showRound();
+        });
+
+        dom.gestaltGrid.addEventListener('click', (event) => {
+          const cell = event.target instanceof Element ? event.target.closest('.gestalt-cell') : null;
+          if (!active || !cell) return;
+
+          const index = Number(cell.dataset.index);
+          const isCorrect = round === 0
+            ? index === targetIndex
+            : round === 1
+              ? clusterIndices.includes(index)
+              : cell.classList.contains('closure-target');
+
+          if (!isCorrect) {
+            dom.gestaltStatus.textContent = 'Not quite—look for the visual grouping and try again.';
+            return;
+          }
+          completeRound();
+        });
+      }
+
+      // 6e. External links: first click = inspect, second click = open.
+      //     A capture-phase listener intercepts the first click before the
+      //     inline onclick runs, so the evaluator is never thrown off the page.
+      const DEFAULT_LINK_HINT = dom.linkHint.textContent;
+      let armedButton = null;
+      let armTimer = 0;
+
+      function disarmLink() {
+        window.clearTimeout(armTimer);
+        if (armedButton) armedButton.classList.remove('armed');
+        armedButton = null;
+        dom.linkHint.textContent = DEFAULT_LINK_HINT;
+      }
+
+      // Reads the destination host out of the inline handler for the log message
+      function hostOf(button) {
+        const match = /'([^']+)'/.exec(button.getAttribute('onclick') || '');
+        try { return new URL(match ? match[1] : '').hostname.replace(/^www\./, ''); }
+        catch (error) { return 'external site'; }
+      }
+
+      function initLinks() {
+        dom.linksGrid.addEventListener('click', (event) => {
+          const button = event.target instanceof Element ? event.target.closest('button[data-net]') : null;
+          if (!button) return;
+          const network = button.dataset.net;
+
+          if (armedButton === button) {
+            // Second click: do NOT stop the event, the inline onclick redirects.
+            log(`Redirecting to ${network} :: ${hostOf(button)}`, 'warn');
+            return;
+          }
+
+          event.stopPropagation(); // first click: block the inline redirect
+          disarmLink();
+          armedButton = button;
+          button.classList.add('armed');
+          dom.linkHint.textContent = `${network} inspected. Click again to open ${hostOf(button)} in this tab.`;
+          armTimer = window.setTimeout(disarmLink, CONFIG.LINK_ARM_MS);
+
+          if (!state.seen.links.has(network)) {
+            log(`Link node probed :: ${network} -> ${hostOf(button)}`, 'info');
+          }
+          state.seen.links.add(network);
+          renderQuest();
+        }, true);
+      }
+
+      // 6f. Theme switch (night/day/high-contrast terminal mode)
+      function initTheme() {
+        const themes = ['dark', 'light', 'high-contrast'];
+        const labels = ['NIGHT', 'DAY', 'HIGH CONTRAST'];
+        const currentTheme = themes.indexOf(document.documentElement.dataset.theme);
+        const currentIndex = currentTheme < 0 ? 0 : currentTheme;
+        dom.themeLabel.textContent = `TERMINAL: ${labels[currentIndex]}`;
+        dom.themeToggle.setAttribute('aria-label', `Change color theme. Current theme: ${labels[currentIndex].toLowerCase()}`);
+
+        dom.themeToggle.addEventListener('click', () => {
+          const root = document.documentElement;
+          const currentIndex = themes.indexOf(root.dataset.theme);
+          const nextIndex = (currentIndex + 1) % themes.length;
+          const nextTheme = themes[nextIndex];
+          root.dataset.theme = nextTheme;
+          dom.themeLabel.textContent = `TERMINAL: ${labels[nextIndex]}`;
+          dom.themeToggle.setAttribute('aria-label', `Change color theme. Current theme: ${labels[nextIndex].toLowerCase()}`);
+          state.themeShifts += 1;
+          log(`Terminal mode shifted :: ${labels[nextIndex]}`, 'info');
+          renderQuest();
+        });
+      }
+
+      function initCommandPalette() {
+        let lastCommandFocus = null;
+        const actions = $$('.command-item', dom.commandList);
+        const visibleActions = () => actions.filter((action) => !action.hidden);
+
+        const close = (restoreFocus = true) => {
+          dom.commandPalette.hidden = true;
+          if (restoreFocus && lastCommandFocus instanceof HTMLElement) lastCommandFocus.focus();
+        };
+
+        const runCommand = (command) => {
+          close();
+          switch (command) {
+            case 'theme':
+              dom.themeToggle.click();
+              break;
+            case 'xray':
+              dom.xrayToggle.click();
+              break;
+            case 'feedback':
+              $('#feedbackTitle').scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' });
+              $('#feedbackName').focus({ preventScroll: true });
+              break;
+            case 'skills':
+              $('#skillsTitle').scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' });
+              $('.skill', dom.skills).focus({ preventScroll: true });
+              break;
+          }
+        };
+
+        const open = () => {
+          if (!dom.commandPalette.hidden) return;
+          lastCommandFocus = document.activeElement;
+          dom.commandInput.value = '';
+          actions.forEach((action) => { action.hidden = false; });
+          dom.commandEmpty.textContent = '';
+          dom.commandPalette.hidden = false;
+          dom.commandInput.focus();
+        };
+
+        dom.commandToggle.addEventListener('click', open);
+        document.addEventListener('keydown', (event) => {
+          if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
+            event.preventDefault();
+            open();
+            return;
+          }
+          if (dom.commandPalette.hidden) return;
+          if (event.key === 'Escape') {
+            event.preventDefault();
+            close();
+          } else if (event.key === 'Enter' && event.target === dom.commandInput) {
+            const first = visibleActions()[0];
+            if (first) {
+              event.preventDefault();
+              runCommand(first.dataset.command);
+            }
+          } else if (event.key === 'Tab') {
+            const focusable = [dom.commandInput, ...visibleActions()];
+            const first = focusable[0];
+            const last = focusable[focusable.length - 1];
+            if (event.shiftKey && document.activeElement === first) {
+              event.preventDefault();
+              last.focus();
+            } else if (!event.shiftKey && document.activeElement === last) {
+              event.preventDefault();
+              first.focus();
+            }
+          }
+        });
+
+        dom.commandInput.addEventListener('input', () => {
+          const query = dom.commandInput.value.trim().toLowerCase();
+          actions.forEach((action) => {
+            action.hidden = !action.textContent.toLowerCase().includes(query);
+          });
+          dom.commandEmpty.textContent = visibleActions().length ? '' : 'No matching actions.';
+        });
+        dom.commandList.addEventListener('click', (event) => {
+          const action = event.target instanceof Element ? event.target.closest('.command-item') : null;
+          if (action && !action.hidden) runCommand(action.dataset.command);
+        });
+        dom.commandPalette.addEventListener('click', (event) => {
+          if (event.target === dom.commandPalette) close();
+        });
+      }
+
+      function initAudio() {
+        let muted = true;
+        let audioContext = null;
+        const AudioContextConstructor = window.AudioContext || window.webkitAudioContext;
+
+        const playTone = (frequency, startAt, duration, volume, waveform = 'sine') => {
+          const oscillator = audioContext.createOscillator();
+          const gain = audioContext.createGain();
+          oscillator.type = waveform;
+          oscillator.frequency.setValueAtTime(frequency, startAt);
+          gain.gain.setValueAtTime(0.0001, startAt);
+          gain.gain.exponentialRampToValueAtTime(volume, startAt + 0.01);
+          gain.gain.exponentialRampToValueAtTime(0.0001, startAt + duration);
+          oscillator.connect(gain);
+          gain.connect(audioContext.destination);
+          oscillator.start(startAt);
+          oscillator.stop(startAt + duration + 0.01);
+        };
+
+        const play = (sound) => {
+          if (muted || !AudioContextConstructor) return;
+          try {
+            if (!audioContext) audioContext = new AudioContextConstructor();
+            if (audioContext.state === 'suspended') {
+              audioContext.resume().catch((error) => console.error('Unable to resume interface audio.', error));
+            }
+            const now = audioContext.currentTime;
+            if (sound === 'hover') {
+              playTone(820, now, 0.045, 0.025, 'triangle');
+            } else if (sound === 'click') {
+              playTone(520, now, 0.085, 0.04);
+            } else if (sound === 'success') {
+              [523.25, 659.25, 783.99].forEach((frequency, index) => {
+                playTone(frequency, now + index * 0.12, 0.22, 0.045);
+              });
+            }
+          } catch (error) {
+            console.error('Unable to play interface audio.', error);
+          }
+        };
+
+        dom.audioToggle.addEventListener('click', () => {
+          muted = !muted;
+          dom.audioToggle.setAttribute('aria-pressed', String(!muted));
+          dom.audioToggle.textContent = `AUDIO: ${muted ? 'OFF' : 'ON'}`;
+          dom.audioToggle.setAttribute('aria-label', `${muted ? 'Enable' : 'Mute'} interface sounds`);
+          if (!muted && !AudioContextConstructor) {
+            console.error('Web Audio is not supported in this browser.');
+          }
+        });
+        document.addEventListener('pointerover', (event) => {
+          const target = event.target instanceof Element ? event.target.closest('.magnetic') : null;
+          if (target && !(event.relatedTarget instanceof Node && target.contains(event.relatedTarget))) play('hover');
+        }, { passive: true });
+        document.addEventListener('click', (event) => {
+          if (event.target instanceof Element && event.target.closest('button.magnetic, .skill')) play('click');
+        });
+        return { play };
+      }
+
+      // 6g. HCI X-ray labels
+      function initXray() {
+        const anchors = [
+          [dom.ringXrayNote, dom.ring],
+          [dom.timelineXrayNote, dom.timeline]
+        ];
+        let enabled = false;
+
+        const positionNotes = () => {
+          if (!enabled) return;
+          anchors.forEach(([note, anchor]) => {
+            const rect = anchor.getBoundingClientRect();
+            const noteWidth = note.offsetWidth;
+            const left = rect.right + 10 + noteWidth <= window.innerWidth - 12
+              ? rect.right + 10
+              : Math.max(12, Math.min(rect.left + rect.width - noteWidth, window.innerWidth - noteWidth - 12));
+            const top = Math.max(12, Math.min(rect.top, window.innerHeight - note.offsetHeight - 12));
+            note.style.left = `${left}px`;
+            note.style.top = `${top}px`;
+          });
+        };
+
+        dom.xrayToggle.addEventListener('click', () => {
+          enabled = !enabled;
+          dom.xrayToggle.setAttribute('aria-pressed', String(enabled));
+          dom.xrayToggle.textContent = `HCI X-RAY: ${enabled ? 'ON' : 'OFF'}`;
+          anchors.forEach(([note]) => {
+            note.hidden = !enabled;
+            note.classList.toggle('visible', enabled);
+          });
+          if (enabled) positionNotes();
+        });
+        window.addEventListener('resize', positionNotes, { passive: true });
+        window.addEventListener('scroll', positionNotes, { passive: true });
+      }
+
+      function initVisionSimulator() {
+        const conditions = [
+          { id: 'protanopia', label: 'Protanopia simulation' },
+          { id: 'cataracts', label: 'Cataracts simulation' },
+          { id: 'glaucoma', label: 'Glaucoma simulation' },
+          { id: 'off', label: 'Normal vision (Off)' }
+        ];
+        let conditionIndex = -1;
+
+        const setCondition = (condition) => {
+          const root = document.documentElement;
+          if (condition.id === 'off') root.removeAttribute('data-vision');
+          else root.dataset.vision = condition.id;
+
+          const active = condition.id !== 'off';
+          dom.visionSimulatorToggle.setAttribute('aria-pressed', String(active));
+          dom.visionSimulatorToggle.setAttribute(
+            'aria-label',
+            `Vision simulator: ${condition.label}. Activate to cycle conditions.`
+          );
+          dom.visionSimulatorToggle.textContent =
+            `A11Y SIMULATOR: ${condition.id === 'off' ? 'OFF' : condition.id.toUpperCase()}`;
+          dom.visionCondition.textContent = `Vision simulation: ${condition.label}`;
+          dom.visionStatus.hidden = false;
+          dom.visionMask.hidden = condition.id !== 'glaucoma';
+        };
+
+        document.documentElement.style.setProperty('--vision-x', `${window.innerWidth / 2}px`);
+        document.documentElement.style.setProperty('--vision-y', `${window.innerHeight / 2}px`);
+        document.addEventListener('pointermove', (event) => {
+          document.documentElement.style.setProperty('--vision-x', `${event.clientX}px`);
+          document.documentElement.style.setProperty('--vision-y', `${event.clientY}px`);
+        }, { passive: true });
+
+        dom.visionSimulatorToggle.addEventListener('click', () => {
+          conditionIndex = (conditionIndex + 1) % conditions.length;
+          setCondition(conditions[conditionIndex]);
+        });
+      }
+
+      function initJakobSimulator() {
+        let countdownTimer = 0;
+        let lastFocusedElement = null;
+        const message = "SYSTEM RESTORED. HCI Principle Displayed: Jakob's Law - Violating familiar design patterns drastically increases cognitive load and user friction.";
+
+        const restoreUI = () => {
+          window.clearInterval(countdownTimer);
+          countdownTimer = 0;
+          document.documentElement.removeAttribute('data-anti-ui');
+          dom.jakobToggle.disabled = false;
+          dom.jakobCountdown.hidden = true;
+          dom.jakobMessage.textContent = message;
+          dom.jakobMessage.hidden = false;
+          dom.jakobClose.hidden = false;
+          dom.jakobClose.focus();
+        };
+
+        dom.jakobToggle.addEventListener('click', () => {
+          if (countdownTimer) return;
+          lastFocusedElement = document.activeElement;
+          let secondsRemaining = 10;
+          dom.jakobToggle.disabled = true;
+          dom.jakobMessage.hidden = true;
+          dom.jakobClose.hidden = true;
+          dom.jakobCountdown.hidden = false;
+          dom.jakobSeconds.textContent = String(secondsRemaining);
+          dom.jakobOverlay.hidden = false;
+          document.documentElement.dataset.antiUi = 'true';
+          dom.jakobCountdown.focus();
+
+          countdownTimer = window.setInterval(() => {
+            secondsRemaining -= 1;
+            if (secondsRemaining <= 0) {
+              dom.jakobSeconds.textContent = '0';
+              restoreUI();
+              return;
+            }
+            dom.jakobSeconds.textContent = String(secondsRemaining);
+          }, 1000);
+        });
+
+        dom.jakobClose.addEventListener('click', () => {
+          dom.jakobOverlay.hidden = true;
+          dom.jakobMessage.hidden = true;
+          dom.jakobClose.hidden = true;
+          if (lastFocusedElement instanceof HTMLElement) lastFocusedElement.focus();
+        });
+
+        dom.jakobOverlay.addEventListener('keydown', (event) => {
+          if (countdownTimer && event.key === 'Tab') {
+            event.preventDefault();
+            dom.jakobCountdown.focus();
+          }
+        });
+
+        window.addEventListener('pagehide', () => {
+          window.clearInterval(countdownTimer);
+          document.documentElement.removeAttribute('data-anti-ui');
+        }, { once: true });
+      }
+
+      // 6h. Feedback form: send feedback with Formspree.
+      function initFeedbackForm() {
+        dom.feedbackForm.addEventListener('submit', async (event) => {
+          event.preventDefault();
+
+          const formData = new FormData(dom.feedbackForm);
+          const nameInput = $('#feedbackName');
+          const messageInput = $('#feedbackMessage');
+          const name = String(formData.get('name') || '').trim();
+          const message = String(formData.get('message') || '');
+          nameInput.setCustomValidity(name ? '' : 'Please enter your name.');
+          messageInput.setCustomValidity('');
+          if (!dom.feedbackForm.reportValidity()) return;
+
+          if (CONFIG.FORMSPREE_ENDPOINT.includes('YOUR_FORM_ID')) {
+            dom.feedbackStatus.classList.remove('error');
+            dom.feedbackStatus.textContent = 'Done — thanks for your feedback! This form is not connected yet, so your feedback was not sent.';
+            return;
+          }
+
+          const submitButton = $('button[type="submit"]', dom.feedbackForm);
+          submitButton.disabled = true;
+          dom.feedbackStatus.classList.remove('error');
+          dom.feedbackStatus.textContent = 'Transmitting to instructor...';
+          try {
+            const response = await fetch(CONFIG.FORMSPREE_ENDPOINT, {
+              method: 'POST',
+              body: formData,
+              headers: { Accept: 'application/json' }
+            });
+            if (!response.ok) throw new Error(`Formspree returned HTTP ${response.status}`);
+            const topic = String(formData.get('topic') || 'General feedback');
+            dom.feedbackForm.reset();
+            dom.feedbackStatus.textContent = 'Feedback sent successfully. Thank you!';
+            log(`Instructor feedback submitted :: ${topic}`, 'ok');
+          } catch (error) {
+            dom.feedbackStatus.textContent = 'Unable to send feedback. Please check your connection and try again.';
+            dom.feedbackStatus.classList.add('error');
+            log(`Instructor feedback failed :: ${error.message}`, 'warn');
+          } finally {
+            submitButton.disabled = false;
+          }
+        });
+      }
+
+      // 6i. Instructor greeting Easter egg; it never changes audit progress.
+      function initEasterEgg() {
+        let buffer = '';
+        let hideTimer = 0;
+        const ignoredTarget = (target) => target instanceof Element &&
+          (target.closest('input, textarea, select, [contenteditable="true"]'));
+
+        document.addEventListener('keydown', (event) => {
+          if (event.ctrlKey || event.altKey || event.metaKey || ignoredTarget(event.target)) {
+            buffer = '';
+            return;
+          }
+          if (!/^[a-z]$/i.test(event.key)) return;
+          buffer = (buffer + event.key.toUpperCase()).slice(-4);
+          if (buffer !== 'GIAN' && buffer !== 'SUDO') return;
+
+          dom.easterEgg.hidden = false;
+          window.clearTimeout(hideTimer);
+          hideTimer = window.setTimeout(() => { dom.easterEgg.hidden = true; }, 6000);
+          log('Instructor greeting Easter egg activated.', 'info');
+          buffer = '';
+        });
+      }
+
+      let playAudio = () => {};
+
+      /* ---------- 7. FINALE: DIALOG + CONFETTI ---------- */
+      let lastFocused = null;
+
+      function completeAudit() {
+        state.finished = true;
+        dom.mission.classList.add('complete');
+        log('SYSTEM AUDIT COMPLETE :: Core Competency Confirmed.', 'ok');
+        playAudio('success');
+        burstConfetti();
+        openSalute();
+      }
+
+      function openSalute() {
+        lastFocused = document.activeElement;
+        dom.salute.hidden = false;
+        dom.saluteClose.focus();
+      }
+
+      function closeSalute() {
+        dom.salute.hidden = true;
+        if (lastFocused && typeof lastFocused.focus === 'function') lastFocused.focus();
+      }
+
+      function burstConfetti() {
+        if (reduceMotion) return; // respect user preference
+        const colors = ['#00f0ff', '#b026ff', '#39ff88', '#ffcf4a', '#ff4d9d', '#ffffff'];
+        const fragment = document.createDocumentFragment();
+
+        for (let i = 0; i < CONFIG.CONFETTI_COUNT; i += 1) {
+          const piece = document.createElement('span');
+          const angle = rand(0, Math.PI * 2);
+          const power = rand(120, Math.min(window.innerWidth, 900) * 0.6);
+          const duration = rand(2.4, 4.2);
+
+          piece.className = 'confetti-piece';
+          piece.style.setProperty('--dx', `${(Math.cos(angle) * power).toFixed(0)}px`);
+          piece.style.setProperty('--dy', `${(Math.sin(angle) * power - 80).toFixed(0)}px`);
+          piece.style.setProperty('--rot', `${rand(-900, 900).toFixed(0)}deg`);
+          piece.style.setProperty('--w', `${rand(6, 12).toFixed(1)}px`);
+          piece.style.setProperty('--h', `${rand(8, 18).toFixed(1)}px`);
+          piece.style.setProperty('--r', Math.random() > 0.6 ? '50%' : '2px');
+          piece.style.setProperty('--c', colors[i % colors.length]);
+          piece.style.setProperty('--dur', `${duration.toFixed(2)}s`);
+          // Self-cleaning: every particle removes itself when its animation ends
+          piece.addEventListener('animationend', () => piece.remove(), { once: true });
+          fragment.appendChild(piece);
+        }
+        dom.confetti.appendChild(fragment);
+      }
+
+      function initFinale() {
+        dom.saluteClose.addEventListener('click', closeSalute);
+        dom.saluteReplay.addEventListener('click', burstConfetti);
+
+        document.addEventListener('keydown', (event) => {
+          if (dom.salute.hidden) return;
+          if (event.key === 'Escape') { closeSalute(); return; }
+          if (event.key === 'Tab') { // minimal focus trap between the two buttons
+            const first = dom.saluteClose;
+            const last = dom.saluteReplay;
+            if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+            else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+          }
+        });
+      }
+
+      /* ---------- 8. MAGNETIC MICRO-INTERACTIONS ---------- */
+      function initMagnetic() {
+        if (reduceMotion || !matches('(hover: hover) and (pointer: fine)')) return;
+        let active = null;
+
+        const reset = () => {
+          if (!active) return;
+          active.style.removeProperty('--mx');
+          active.style.removeProperty('--my');
+          active = null;
+        };
+
+        document.addEventListener('pointermove', (event) => {
+          const target = event.target instanceof Element ? event.target.closest('.magnetic') : null;
+          if (target !== active) reset();
+          if (!target) return;
+          active = target;
+          const rect = target.getBoundingClientRect();
+          if (!rect.width || !rect.height) return;
+          const dx = (event.clientX - (rect.left + rect.width / 2)) / rect.width;
+          const dy = (event.clientY - (rect.top + rect.height / 2)) / rect.height;
+          target.style.setProperty('--mx', `${(dx * CONFIG.MAGNET_STRENGTH).toFixed(1)}px`);
+          target.style.setProperty('--my', `${(dy * CONFIG.MAGNET_STRENGTH).toFixed(1)}px`);
+        }, { passive: true });
+
+        document.documentElement.addEventListener('pointerleave', reset);
+        window.addEventListener('blur', reset);
+      }
+
+      /* ---------- 9. BOOTSTRAP ---------- */
+      function init() {
+        restoreProgress();
+        playAudio = initAudio();
+        initRing();
+        buildObjectives();
+        buildTimeline();
+        buildSkills();
+        buildBadges();
+        buildHobbies();
+        initReflexTester();
+        initHickTest();
+        initGestaltTest();
+        initMemoryTest();
+        initLinks();
+        initFeedbackForm();
+        initTheme();
+        initXray();
+        initVisionSimulator();
+        initJakobSimulator();
+        initCommandPalette();
+        initEasterEgg();
+        initFinale();
+        initMagnetic();
+
+        // Boot sequence in the log
+        log('Session initialized :: Developer Core Dashboard v1.0', 'ok');
+        log('Evaluator detected :: Sir Gian Carlo S. Cataraja', 'info');
+        log('Mission :: complete every objective to reach 100% System Audit.', 'warn');
+
+        renderRetention();
+        renderQuest();
+
+        const timerId = window.setInterval(tick, CONFIG.TICK_MS);
+
+        // Resync the clock when the tab becomes visible so hidden time is never counted
+        document.addEventListener('visibilitychange', () => { state.lastTick = performance.now(); });
+
+        // Tidy up on exit so no timers outlive the page
+        window.addEventListener('pagehide', () => {
+          window.clearInterval(timerId);
+          window.clearTimeout(armTimer);
+          logTimers.forEach((timer) => window.clearInterval(timer));
+          logTimers.clear();
+          saveProgress();
+        });
+      }
+
+      init();
+    })();
+  </script>
+</body>
+</html>
